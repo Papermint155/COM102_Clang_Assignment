@@ -359,6 +359,11 @@ void GetCitizenInfo(int user_index){
             printf("Enter Martial Status (0 for Single, 1 for Married): ");
             if (scanf("%d", &citizen->martialStatus) == 1 && (citizen->martialStatus == 0 || citizen->martialStatus == 1)) {
                 ClearInputBuffer();
+                if (citizen->martialStatus == 0) {
+                    citizen->deduction[0].category[0] = 0; // Single
+                } else {
+                    citizen->deduction[0].category[0] = 1; // Married
+                }
                 break;
             } else {
                 printf("Please enter 0 for Single or 1 for Married.\n");
@@ -388,6 +393,23 @@ void GetCitizenInfo(int user_index){
             printf("Enter Number of Children Under 18: ");
             if (scanf("%d", &citizen->childrenUnder18) == 1 && citizen->childrenUnder18 >= 0 && citizen->childrenUnder18 <= citizen->numberOfChildren) {
                 ClearInputBuffer();
+                switch (citizen->childrenUnder18) {
+                    case 1:
+                    case 2:
+                        citizen->deduction[0].category[1] = 1;
+                        break;
+                    case 3:
+                    case 4:
+                        citizen->deduction[0].category[1] = 2;
+                        break;
+                    case 5:
+                    case 6:
+                        citizen->deduction[0].category[1] = 3;
+                        break;
+                    default:
+                        citizen->deduction[0].category[1] = 4;
+                        break;
+                }
                 break;
             } else {
                 printf("Please enter a valid number of children under 18 (0-%d).\n", citizen->numberOfChildren);
@@ -400,6 +422,11 @@ void GetCitizenInfo(int user_index){
             printf("Special Healthcare Status (any people in your household with special healthcare needs)(0 for No, 1 for Yes): ");
             if (scanf("%d", &citizen->specialHealthcare) == 1 && (citizen->specialHealthcare == 0 || citizen->specialHealthcare == 1)) {
                 ClearInputBuffer();
+                if (citizen->specialHealthcare == 0) {
+                    citizen->deduction[0].category[2] = 0; // No special healthcare
+                } else {
+                    citizen->deduction[0].category[2] = 1; // Yes special healthcare
+                }
                 break;
             } else {
                 printf("Please enter 0 for No or 1 for Yes.\n");
@@ -414,11 +441,87 @@ void GetCitizenInfo(int user_index){
 
 void EditCitizenInfo(int user_index, int field_choice)
 {
+    struct Citizen *citizen = &citizen_list[user_index];
+    switch (field_choice)
+    {
+    case 1:
+        printf("Current Marital Status: %s\n", citizen->martialStatus ? "Married" : "Single");
+        printf("Enter new Marital Status (0 for Single, 1 for Married): ");
+        int newStatus;
+        if (scanf("%d", &newStatus) == 1 && (newStatus == 0 || newStatus == 1)) {
+            citizen->martialStatus = newStatus;
+            ClearInputBuffer();
+        } else {
+            printf("Invalid input. Please enter 0 or 1.\n");
+            ClearInputBuffer();
+        }
+        break;
+    case 2:
+        printf("Current Number of Children: %d\n", citizen->numberOfChildren);
+        printf("Enter new Number of Children: ");
+        if (scanf("%d", &citizen->numberOfChildren) == 1 && citizen->numberOfChildren >= 0) {
+            ClearInputBuffer();
+        } else {
+            printf("Invalid input. Please enter a valid number of children.\n");
+            ClearInputBuffer();
+        }
+        ClearScreen();
+            printf("Current Children Under 18: %d\n", citizen->childrenUnder18);
+        printf("Enter new Children Under 18: ");
+        if (scanf("%d", &citizen->childrenUnder18) == 1 && citizen->childrenUnder18 >= 0 && citizen->childrenUnder18 <= citizen->numberOfChildren) {
+            ClearInputBuffer();
+        } else {
+            printf("Invalid input. Please enter a valid number of children under 18.\n");
+            ClearInputBuffer();
+        }
+        break;
+        
+    case 3:
+        printf("Current Children Under 18: %d\n", citizen->childrenUnder18);
+        printf("Enter new Children Under 18: ");
+        if (scanf("%d", &citizen->childrenUnder18) == 1 && citizen->childrenUnder18 >= 0 && citizen->childrenUnder18 <= citizen->numberOfChildren) {
+            ClearInputBuffer();
+        } else {
+            printf("Invalid input. Please enter a valid number of children under 18.\n");
+            ClearInputBuffer();
+        }
+        break;
+    case 4:
+        printf("Current Special Healthcare Status: %s\n", citizen->specialHealthcare ? "Yes" : "No");
+        printf("Enter new Special Healthcare Status (0 for No, 1 for Yes): ");
+        int newHealthcare;
+        if (scanf("%d", &newHealthcare) == 1 && (newHealthcare == 0 || newHealthcare == 1)) {
+            citizen->specialHealthcare = newHealthcare;
+            ClearInputBuffer();
+        } else {
+            printf("Invalid input. Please enter 0 or 1.\n");
+            ClearInputBuffer();
+        }
+        break;
+    default:
+        printf("Invalid field choice.\n");
+    }
     SaveUserData();
 }
 
-void CalculateTax(int user_index)
-{
+void CalculateTax(int user_index){
+    struct Citizen *citizen = &citizen_list[user_index];
+    citizen->totalDeduction = 0.0;
+    // Calculate deductions based on marital status
+    if (citizen->martialStatus) {
+        citizen->totalDeduction += 9000.0; // Married deduction
+    }
+    if (citizen->numberOfChildren > 0) {
+        citizen->totalDeduction += lookupChildAllowance(citizen->numberOfChildren, citizen->childrenUnder18, childTable, 4);
+    }
+    if (citizen->specialHealthcare) {
+        citizen->totalDeduction += 8000.0; // Special healthcare deduction
+    }
+    citizen->taxableIncome = citizen->annualIncome - citizen->totalDeduction;
+    if (citizen->taxableIncome < 0) {
+        citizen->taxableIncome = 0.0; // Ensure taxable income doesn't go negative
+    }
+    citizen->incomeTax = citizen->taxableIncome * lookupTaxRate(citizen->taxableIncome, brackets, 7);
     SaveUserData();
 }
 
@@ -461,6 +564,38 @@ double lookupChildAllowance(int totalChildren, int under18, struct ChildAllowanc
 
 void PrintDashBoard(int user_index)
 {
+    CalculateTax(user_index); // Ensure tax calculations are up-to-date
+    struct Citizen *citizen = &citizen_list[user_index];
+    printf("-------------------------------------------------------------------------------------\n");
+    printf("=================================== Tax Dashboard ===================================\n");
+    printf("-------------------------------------------------------------------------------------\n");
+    printf("Hi, %s\n",citizen->citizenName);
+    printf("-------------------------------------------------------------------------------------\n");
+    printf("Citizen ID: %s\n", citizen->citizenId);
+    printf("Age: %d\n", citizen->age);
+    printf("Marital Status: %s\n", citizen->martialStatus ? "Married" : "Single");
+    printf("-------------------------------------------------------------------------------------\n");
+    printf("Number of Children: %d\n", citizen->numberOfChildren);
+    printf("Number of Children Under 18: %d\n", citizen->childrenUnder18);
+    printf("Special Healthcare Status: %s\n", citizen->specialHealthcare ? "Yes" : "No");
+    printf("-------------------------------------------------------------------------------------\n");
+    printf("Annual Income: %30.2f\n", citizen->annualIncome);
+    printf("-------------------------------------------------------------------------------------\n");
+    printf("Deduction Category Available:\n");
+    printf("[1] Marital Status Deduction: %s %20.2f\n", citizen->deduction[0].category[0] ? "Yes" : "No", citizen->martialStatus ? 9000.0 : 0.0);
+    printf("[2] Children Deduction (Deduction Category): %d %20.2f\n", citizen->deduction[0].category[1], childTable[citizen->deduction[0].category[1]].amount);
+    printf("[3] Special Healthcare Deduction: %s %20.2f\n", citizen->deduction[0].category[2] ? "Yes" : "No", citizen->specialHealthcare ? 5000.0 : 0.0);
+    printf("-------------------------------------------------------------------------------------\n");
+    printf("Total Deduction: %30.2f\n", citizen->totalDeduction);
+    printf("-------------------------------------------------------------------------------------\n");
+    printf("Taxable Income: %30.2f\n", citizen->taxableIncome);
+    printf("-------------------------------------------------------------------------------------\n");
+    printf("Tax Rate: %30.2f%%\n", lookupTaxRate(citizen->taxableIncome, brackets, 7) * 100);
+    printf("-------------------------------------------------------------------------------------\n");
+    printf("Income Tax: %30.2f\n", citizen->incomeTax);
+    printf("-------------------------------------------------------------------------------------\n");
+    printf("Tax Per Month: %30.2f\n", citizen->incomeTax / 12);
+    printf("-------------------------------------------------------------------------------------\n");
     printf("Press Any key to Return");
     getch();
 }
@@ -483,9 +618,9 @@ Special Healthcare Status :
 Annual Income :
 -------------------------------------------------------------------------------------
 Deduction Category Available:
-[1] Marital Status Deduction :
-[2] Children Deduction :
-[3] Special Healthcare Deduction :
+[1] Marital Status Deduction (Yes/No)):
+[2] Children Deduction (Deduction Category):
+[3] Special Healthcare Deduction (Yes/No):
 -------------------------------------------------------------------------------------
 Total Deduction :
 -------------------------------------------------------------------------------------
