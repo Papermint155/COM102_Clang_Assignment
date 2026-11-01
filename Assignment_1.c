@@ -340,12 +340,7 @@ void RegisterUser()
     printf("\nNew User Registration Success! \nPress any key to continue...");
     getch(); // wait till the user want to proceed ;
 }
-// int age;
-//     bool martialStatus;
-//     double annualIncome;
-//     int numberOfChildren;
-//     int childrenUnder18;
-//     bool specialHealthcare;
+
 void GetCitizenInfo(int user_index){
     struct Citizen *citizen = &citizen_list[user_index];
     while (1) {
@@ -373,11 +368,47 @@ void GetCitizenInfo(int user_index){
 
         while (1) {
             ClearScreen();
-            CheckValidDouble("Enter Annual Income: $");
+            citizen->annualIncome = CheckValidDouble("Enter Annual Income: $");
+        }
+
+        while(1) {
+            ClearScreen();
+            printf("Enter Number of Children: ");
+            if (scanf("%d", &citizen->numberOfChildren) == 1 && citizen->numberOfChildren >= 0 && citizen->numberOfChildren < 20) {
+                ClearInputBuffer();
+                break;
+            } else {
+                printf("Please enter a valid number of children (0-19).\n");
+                ClearInputBuffer();
             }
+        }
+
+        while(1) {
+            ClearScreen();
+            printf("Enter Number of Children Under 18: ");
+            if (scanf("%d", &citizen->childrenUnder18) == 1 && citizen->childrenUnder18 >= 0 && citizen->childrenUnder18 <= citizen->numberOfChildren) {
+                ClearInputBuffer();
+                break;
+            } else {
+                printf("Please enter a valid number of children under 18 (0-%d).\n", citizen->numberOfChildren);
+                ClearInputBuffer();
+            }
+        }
+
+        while(1) {
+            ClearScreen();
+            printf("Special Healthcare Status (any people in your household with special healthcare needs)(0 for No, 1 for Yes): ");
+            if (scanf("%d", &citizen->specialHealthcare) == 1 && (citizen->specialHealthcare == 0 || citizen->specialHealthcare == 1)) {
+                ClearInputBuffer();
+                break;
+            } else {
+                printf("Please enter 0 for No or 1 for Yes.\n");
+                ClearInputBuffer();
+            }
+        }
+
+    
     }
-
-
     SaveUserData();
 }
 
@@ -483,6 +514,9 @@ void PrintCitizenInfo(int user_index)
         return;
     }
     // mark
+    fprintf(file_path,"-------------------------------------------------------------------------------------");
+    fprintf(file_path,"=================================== Tax Dashboard ===================================");
+    fprintf(file_path,"-------------------------------------------------------------------------------------");
     fprintf(file_path, "Citizen ID: %s\n", citizen_list[user_index].citizenId);
     fprintf(file_path, "Citizen Name: %s\n", citizen_list[user_index].citizenName);
     fprintf(file_path, "Age: %d\n", citizen_list[user_index].age);
