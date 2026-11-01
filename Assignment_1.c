@@ -653,13 +653,13 @@ void CalculateTax(int user_index){
     citizen->totalDeduction = 0.0;
     // Calculate deductions based on marital status
     if (citizen->martialStatus) {
-        citizen->totalDeduction += 9000.0; // Married deduction
+        citizen->totalDeduction += 5000.0; // Married deduction
     }
     if (citizen->numberOfChildren > 0) {
         citizen->totalDeduction += lookupChildAllowance(citizen->numberOfChildren, citizen->childrenUnder18, childTable, 4);
     }
     if (citizen->specialHealthcare) {
-        citizen->totalDeduction += 8000.0; // Special healthcare deduction
+        citizen->totalDeduction += 20000.0; // Special healthcare deduction
     }
     citizen->taxableIncome = citizen->annualIncome - citizen->totalDeduction;
     if (citizen->taxableIncome < 0) {
@@ -878,3 +878,13 @@ int main()
     }
     return 0;
 }
+
+/*Need to be added ;
+Confirm key for every input
+Check unique ID 
+Age must >= 18
+change back to bin file
+Add admin
+Add search function for admin
+
+*/
