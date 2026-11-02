@@ -12,6 +12,7 @@
 #include <string.h>
 #include <math.h>  // for isnan() function
 #include <conio.h> // getch() function
+#include <ctype.h>
 
 int current_active_user = -1;
 int registered_user = 0;
@@ -20,6 +21,8 @@ double temp_value = 0.0;
 char edit_menu[8][40] = {"Back/Return", "Edit Age", "Edit Martial Status", "Edit Annual Income", "Edit Number of Children","Edit Number of Children Under 18", "Edit Special Healthcare Status"};
 char login_menu[3][40] = {"Login", "Register New User", "Exit"};
 char dash_menu[7][40] = {"Edit Citizen Info", "Lookup Tax Bracket", "Lookup Citizen Info", "Tax Dashboard", "Print Citizen Info", "Logout", "Exit"};
+char admin_menu[7][40] = {"View All Citizens", "Add Citizen", "Edit Citizen Info","Overall Statistics", "Print Overall Statistics", "Logout", "Exit"};
+char admin_category_Selection[11][40] = {"ID", "Name", "Age", "Marital Status", "Annual Income", "Number of Children", "Children Under 18", "Special Healthcare Status", "Total Deduction", "Taxable Income", "Income Tax"};
 // char admin_menu[5][40] = {"View All Citizens", "Edit Citizen Info", "Delete Citizen Info", "Logout", "Exit"};
 
 
@@ -191,6 +194,20 @@ int SelectOption(char option[][40], int total_choice)
     etc
     */
 }
+
+int CheckIdUniqueness(char *id)
+{
+    for (int i = 0; i < registered_user; i++)
+    {
+        if (strcmp(citizen_list[i].citizenId, id) == 0)
+        {
+            return 0; // ID is not unique
+        }
+    }
+    return 1; // ID is unique
+}
+
+
 
 double lookupTaxRate(double taxableIncome, struct TaxBracket table[], int size)
 {
@@ -667,6 +684,190 @@ void CalculateTax(int user_index){
     }
     citizen->incomeTax = citizen->taxableIncome * lookupTaxRate(citizen->taxableIncome, brackets, 7);
     SaveUserData();
+}
+
+int CompareStrings(const void *a, const void *b) {
+    const struct Citizen *citizenA = (const struct Citizen *)a;
+    const struct Citizen *citizenB = (const struct Citizen *)b;
+    
+    // _stricmp automatically handles the lowercase conversion during comparison
+    return _stricmp(citizenA->citizenName, citizenB->citizenName); 
+}
+
+void SearchInfobyCategory(int category_choice, char *search_term)
+{
+    ClearScreen();
+    int found = 0;
+    int found_index[50];// Store the indices of found citizens
+    int dashboard_ntb_print [10]; 
+    int counter = 0;
+    printf("Search Results for %s: \n", admin_category_Selection[category_choice]);
+    for (int i = 0; i < registered_user; i++)
+    {
+        struct Citizen *citizen = &citizen_list[i];
+        int match = 0;
+        switch (category_choice)
+        {
+        case 0: // ID
+            if (strstr(citizen->citizenId, search_term) != NULL)
+                match = 1;
+            break;
+        case 1: // Name
+            if (strstr(citizen->citizenName, search_term) != NULL)
+                match = 1;
+            break;
+        case 2: // Age
+            if (atoi(search_term) == citizen->age)
+                match = 1;
+            break;
+        case 3: // Marital Status
+            if ((strcmp(search_term, "Married") == 0 && citizen->martialStatus) ||
+                (strcmp(search_term, "Single") == 0 && !citizen->martialStatus))
+                match = 1;
+            break;
+        case 4: // Annual Income
+            if (atof(search_term) == citizen->annualIncome)
+                match = 1;
+            break;
+        case 5: // Number of Children
+            if (atoi(search_term) == citizen->numberOfChildren)
+                match = 1;
+            break;
+        case 6: // Children Under 18
+            if (atoi(search_term) == citizen->childrenUnder18)
+                match = 1;
+            break;
+        case 7: // Special Healthcare Status
+            if ((strcmp(search_term, "Yes") == 0 && citizen->specialHealthcare) ||
+                (strcmp(search_term, "No") == 0 && !citizen->specialHealthcare))
+                match = 1;
+            break;
+        case 8: // Total Deduction
+            if (atof(search_term) == citizen->totalDeduction)
+                match = 1;
+            break;
+        case 9: // Taxable Income
+            if (atof(search_term) == citizen->taxableIncome)
+                match = 1;
+            break;
+        case 10: // Income Tax
+            if (atof(search_term) == citizen->incomeTax)
+                match = 1;
+            break;
+        default:
+            printf("[!] Error: Invalid category choice.\n");
+            return;
+        }
+
+        if (match)
+        {
+            found++;
+            found_index[found - 1] = i; // Store the index of the found citizen
+        }
+    }
+
+    if (found == 0)
+    {
+        printf("[!] No matching citizens found.\n");
+    }
+    else
+    {
+        printf("Found %d matching citizens:\n", found);
+    }
+    printf("-------------------------------------------------------------------------------------------------\n");
+    printf("Please Select the Category you want to view the dashboard (Press 0 to return):\n");
+    int admin_Selection;
+    admin_Selection = SelectOption(admin_category_Selection, 11);
+    while (admin_category_Selection != 0)
+    {
+        dashboard_ntb_print[counter] = SelectOption(admin_category_Selection, 11);
+        counter++;
+        admin_Selection = SelectOption(admin_category_Selection, 11);
+    }
+    for (int i = -1; i < found; i++)
+    {
+        struct Citizen *citizen = &citizen_list[found_index[i]];
+        for (int j = 0; j < counter; j++)
+        {
+            int category = dashboard_ntb_print[j];
+            switch (category)
+            {
+            case 0:
+                printf("Citizen ID: \t");
+                break;
+            case 1:
+                printf("Citizen Name: \t");
+                break;
+            case 2:
+                printf("Age: \t\t");
+                break;
+            case 3:
+                printf("Marital Status: \t");
+                break;
+            case 4:
+                printf("Annual Income: \t");
+                break;
+            case 5:
+                printf("Number of Children: \t");
+                break;
+            case 6:
+                printf("Children Under 18: \t");
+                break;
+            case 7:
+                printf("Special Healthcare Status: \t");
+                break;
+            case 8:
+                printf("Total Deduction: \t");
+                break;
+            case 9:
+                printf("Taxable Income: \t");
+                break;
+            case 10:
+                printf("Income Tax: \t");
+                break;
+            default:
+                printf("[!] Error: Invalid category choice.\n");
+            }
+            printf("-------------------------------------------------------------------------------------------------\n");
+            switch (category){
+            case 0:
+                printf("%s  ", citizen->citizenId);
+                break;
+            case 1:
+                printf("%s  ", citizen->citizenName);
+                break;
+            case 2:
+                printf("%d  ", citizen->age);
+                break;
+            case 3:
+                printf("%s  ", citizen->martialStatus ? "Married" : "Single");
+                break;
+            case 4:
+                printf("%.2f  ", citizen->annualIncome);
+                break;
+            case 5:
+                printf("%d  ", citizen->numberOfChildren);
+                break;
+            case 6:
+                printf("%d  ", citizen->childrenUnder18);
+                break;
+            case 7:
+                printf("%s  ", citizen->specialHealthcare ? "Yes" : "No");
+                break;  
+            case 8:
+                printf("%.2f  ", citizen->totalDeduction);
+                break;
+            case 9:
+                printf("%.2f  ", citizen->taxableIncome);
+                break;
+            case 10:
+                printf("%.2f  ", citizen->incomeTax);
+                break;
+            default:
+                printf("[!] Error: Invalid category choice.\n");
+            }
+        }
+    }
 }
 
 
