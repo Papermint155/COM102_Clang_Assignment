@@ -466,11 +466,11 @@ void GetCitizenInfo(int user_index){
     while (1) {
         ClearScreen();
         printf("Enter Age: ");
-        if (scanf("%d", &citizen->age) == 1 && citizen->age > 0 && citizen->age < 150) {
+        if (scanf("%d", &citizen->age) == 1 && citizen->age > 17 && citizen->age < 150) {
             ClearInputBuffer();
             break;
         } else {
-            printf("Please enter a valid age between 1 and 149.\n");
+            printf("Please enter a valid age between 18 and 149.\n");
             ClearInputBuffer();
         }
     }
@@ -694,6 +694,19 @@ int CompareStrings(const void *a, const void *b) {
     return _stricmp(citizenA->citizenName, citizenB->citizenName); 
 }
 
+void SortCitizensByName(char *citizen_list, int sortbycategory, int sortorder) {
+    if (sortbycategory == 1) { // Sort by Name
+        qsort(citizen_list, registered_user, sizeof(struct Citizen), CompareStrings);
+        if (sortorder == 1) { // Descending order
+            for (int i = 0; i < registered_user / 2; i++) {
+                struct Citizen temp = citizen_list[i];
+                citizen_list[i] = citizen_list[registered_user - 1 - i];
+                citizen_list[registered_user - 1 - i] = temp;
+            }
+        }
+    }   
+} 
+
 void SearchInfobyCategory(int category_choice, char *search_term)
 {
     ClearScreen();
@@ -784,6 +797,12 @@ void SearchInfobyCategory(int category_choice, char *search_term)
         counter++;
         admin_Selection = SelectOption(admin_category_Selection, 11);
     }
+
+    printf("-------------------------------------------------------------------------------------------------\n");
+    printf("Sort By? (Press 0 to return)\n");
+    int sortbycategory = SelectOption(admin_category_Selection, 11);
+    //add sorting function here
+    printf("-------------------------------------------------------------------------------------------------\n");
     for (int i = -1; i < found; i++)
     {
         struct Citizen *citizen = &citizen_list[found_index[i]];
@@ -869,6 +888,48 @@ void SearchInfobyCategory(int category_choice, char *search_term)
         }
     }
 }
+
+
+char adminSummaryDashboardChoice[15][60] = {
+    "Total Number of Registered Citizens",
+    "Total Number of Citizens with Special Healthcare Needs",
+    "Total Number of Married Citizens",
+    "Total Number of Single Citizens",
+    "Total Number of Citizens with Annual Income above a Certain Threshold",
+    "Average Annual Income of All Citizens",
+    "Average Taxable Income of All Citizens",
+    "Total Income Tax Collected from All Citizens",
+    "Total Exemptions/Deductions Claimed by All Citizens",
+    "Total Number of Citizens with Children",
+    "Total Number of Citizens with Children Under 18",
+    "Mean income tax per citizen",
+    "Median income tax per citizen",
+    "Standard deviation of income tax per citizen",
+    "Back to Main Menu"
+
+};
+void adminSummaryDashboard()
+{
+// ask print dashboard after showing the summary of all citizens
+    
+}
+/* draft od summard board 
+-------------------------------------------------------------------------------------------
+------------------------ Summary of All Citizens Dashboard --------------------------------
+-------------------------------------------------------------------------------------------
+Selected category 1 
+-----------------------------------------------------------------------------------
+Selected Cat 2 
+-----------------------------------------------------------------------------------
+etc
+*/
+
+void PrintadminSummaryDashboard(int category_choice)
+{
+    
+}
+
+
 
 
 void PrintDashBoard(int user_index)
@@ -1004,6 +1065,7 @@ int main()
         if (choice == 0)
         { // Login
             current_active_user = UserLogin();
+            // add admin login check here
             if (current_active_user != -1)
             { // If login is successful
                 int logged_in = 1;
@@ -1087,5 +1149,7 @@ Age must >= 18
 change back to bin file
 Add admin
 Add search function for admin
+admin add citizen then the password is equal to the citizen ID
+
 
 */
