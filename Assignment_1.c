@@ -14,17 +14,61 @@
 #include <conio.h> // getch() function
 #include <ctype.h>
 
+#define MAX_CITIZENS 30
+
 int current_active_user = -1;
 int registered_user = 0;
 double temp_value = 0.0;
 
-char edit_menu[8][40] = {"Back/Return", "Edit Age", "Edit Martial Status", "Edit Annual Income", "Edit Number of Children","Edit Number of Children Under 18", "Edit Special Healthcare Status"};
-char login_menu[3][40] = {"Login", "Register New User", "Exit"};
-char dash_menu[7][40] = {"Edit Citizen Info", "Lookup Tax Bracket", "Lookup Citizen Info", "Tax Dashboard", "Print Citizen Info", "Logout", "Exit"};
-char admin_menu[7][40] = {"View All Citizens", "Add Citizen", "Edit Citizen Info","Overall Statistics", "Print Overall Statistics", "Logout", "Exit"};
-char admin_category_Selection[11][40] = {"ID", "Name", "Age", "Marital Status", "Annual Income", "Number of Children", "Children Under 18", "Special Healthcare Status", "Total Deduction", "Taxable Income", "Income Tax"};
-// char admin_menu[5][40] = {"View All Citizens", "Edit Citizen Info", "Delete Citizen Info", "Logout", "Exit"};
+char edit_menu[7][40] = {
+    "Back/Return",
+    "Edit Age",
+    "Edit Marital Status",
+    "Edit Annual Income",
+    "Edit Number of Children",
+    "Edit Number of Children Under 18",
+    "Edit Special Healthcare Status"
+};
 
+char login_menu[3][40] = {"Login", "Register New User", "Exit"};
+
+char dash_menu[7][40] = {
+    "Edit Citizen Info",
+    "Lookup Tax Bracket",
+    "Lookup Child Allowance",
+    "Tax Dashboard",
+    "Print Citizen Info",
+    "Logout",
+    "Exit"
+};
+
+char admin_menu[8][40] = {
+    "View All Citizens",
+    "Search Citizen Info",
+    "Add Citizen",
+    "Edit Citizen Info",
+    "Overall Statistics",
+    "Print Overall Statistics",
+    "Logout",
+    "Exit"
+};
+
+// Updated 13-option category selector with comma fixed after "Income Tax"
+char admin_category_Selection[13][40] = {
+    "Done / Proceed",
+    "ID",
+    "Name",
+    "Age",
+    "Marital Status",
+    "Annual Income",
+    "Number of Children",
+    "Children Under 18",
+    "Special Healthcare Status",
+    "Total Deduction",
+    "Taxable Income",
+    "Income Tax",
+    "All Categories (Default)"
+};
 
 struct ChildAllowance {
     char category[25];
