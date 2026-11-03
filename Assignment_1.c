@@ -1078,6 +1078,13 @@ void ShowAndPrintCitizenTable(struct Citizen matched_citizens[], int found) {
 //     return _stricmp(citizenA->citizenName, citizenB->citizenName); 
 // }
 
+int CompareDoubles(const void *a, const void *b) {
+    double da = *(const double *)a;
+    double db = *(const double *)b;
+    return (da > db) - (da < db);
+}
+
+
 int SelectSummaryDashboardCategories(int selected_cats[], int *cat_count, double *threshold) {
     *cat_count = 0;
     *threshold = 50000.0;
