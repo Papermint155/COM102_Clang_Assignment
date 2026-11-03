@@ -536,10 +536,9 @@ void RegisterUser() {
     SaveUserData();
     printf("\nNew User Registration Success!\nPress any key to continue...");
     getch();
-}
 
     // Get Password
-    while (1)
+    while(1)
     {
         printf("Password (Max 20): ");
         fgets(temp_input, sizeof(temp_input), stdin);
@@ -1539,59 +1538,58 @@ void AdminMenu(int *running) {
     }
 }
 
-int main()
-{
-    LoadUserData(); // Load user data at the start of the program
+int main() {
+    LoadUserData();
     int running = 1;
 
-    while (running)
-    {
+    while (running) {
         int choice = SelectOption(login_menu, 3);
-        if (choice == 0)
-        { // Login
+        if (choice == 0) {
             current_active_user = UserLogin();
-            // add admin login check here
-            if (current_active_user != -1)
-            { // If login is successful
+            if (current_active_user == -2) {
+                AdminMenu(&running);
+            } else if (current_active_user != -1) {
                 int logged_in = 1;
-                while (logged_in)
-                {
-                    if (citizen_list[current_active_user].LoginCount == 1){
+                while (logged_in) {
+                    if (citizen_list[current_active_user].LoginCount == 1) {
                         GetCitizenInfo(current_active_user);
-                        citizen_list[current_active_user].LoginCount++; // Increment to avoid re-entering info
+                        citizen_list[current_active_user].LoginCount++;
                     }
                     int dash_choice = SelectOption(dash_menu, 7);
-                    switch (dash_choice)
-                    {
+                    switch (dash_choice) {
                     case 0:
                         EditCitizenInfo(current_active_user, SelectOption(edit_menu, 7));
                         ClearScreen();
                         break;
-                    case 1:
+                    case 1: {
                         ClearScreen();
-                        temp_value = CheckValidDouble("Please enter the taxable income to lookup the tax bracket: $");
+                        temp_value = CheckValidDouble("Please enter the taxable income to lookup the tax bracket: RM ");
                         double tax_rate = lookupTaxRate(temp_value, brackets, 7);
-                        for (int i = 0; i < 6; i++){
-                            printf("Bracket %d: %.2f to %.2f, Tax Rate: %.2f%%\n", i + 1, brackets[i].minIncome, brackets[i].maxIncome, brackets[i].taxRate * 100);
+                        for (int i = 0; i < 6; i++) {
+                            printf("Bracket %d: %.2f to %.2f, Tax Rate: %.2f%%\n",
+                                   i + 1, brackets[i].minIncome, brackets[i].maxIncome, brackets[i].taxRate * 100);
                         }
-                        printf("Bracket 7: %.2f and above, Tax Rate: %.2f%%\n", brackets[6].minIncome, brackets[6].taxRate * 100);
+                        printf("Bracket 7: %.2f and above, Tax Rate: %.2f%%\n",
+                               brackets[6].minIncome, brackets[6].taxRate * 100);
                         printf("\n--------------------------------------------------------------------------\n");
                         printf("Your taxable income of %.2f falls into a tax rate of %.2f%%\n", temp_value, tax_rate * 100);
                         printf("Press any key to return...");
                         getch();
                         break;
-                    case 2:
+                    }
+                    case 2: {
                         ClearScreen();
                         temp_value = CheckValidDouble("Please enter the children below 18 count to lookup the child allowance: ");
                         double child_allowance = lookupChildAllowance((int)temp_value, (int)temp_value, childTable, 4);
-                        for (int i = 0; i < 4; i++){
-                            printf("Child Allowance %c: %d to %d children, Amount: %.2f\n", 'A' + i, childTable[i].minChildren, childTable[i].maxChildren, childTable[i].amount);
+                        for (int i = 0; i < 4; i++) {
+                            printf("Child Allowance %c: %d to %d children, Amount: %.2f\n",'A' + i, childTable[i].minChildren, childTable[i].maxChildren, childTable[i].amount);
                         }
                         printf("\n--------------------------------------------------------------------------\n");
                         printf("Your children count of %d falls into a child allowance of %.2f\n", (int)temp_value, child_allowance);
                         printf("Press any key to return...");
                         getch();
                         break;
+                    }
                     case 3:
                         PrintDashBoard(current_active_user);
                         break;
@@ -1602,26 +1600,29 @@ int main()
                         getch();
                         break;
                     case 5:
-                        logged_in = 0; // Logout
+                        ClearScreen();
+                        if (ConfirmAction("Logout?"))
+                        {
+                            logged_in = 0;
+                        }
                         break;
                     case 6:
-                        running = 0; // Exit
-                        logged_in = 0; // Also exit the logged-in loop
+                        ClearScreen();
+                        if(ConfirmAction("Exit?")){
+                            running = 0;
+                            logged_in = 0;
+                        }
                         break;
-                    default:
-                        printf("Invalid choice. Please try again.\n");
-                        getch();
                     }
                 }
             }
-        }
-        else if (choice == 1)
-        { // Register New User
+        } else if (choice == 1) {
             RegisterUser();
-        }
-        else if (choice == 2)
-        { // Exit
-            running = 0;
+        } else if (choice == 2) {
+            ClearScreen();
+            if (ConfirmAction("Exit ?")){
+                running = 0;
+            }
         }
     }
     return 0;
