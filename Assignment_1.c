@@ -355,6 +355,20 @@ double lookupChildAllowance(int totalChildren, int under18, struct ChildAllowanc
     return 0.0;
 }
 
+void UpdateChildCategoryIndex(struct Citizen *citizen) {
+    if (citizen->numberOfChildren <= 0 || citizen->numberOfChildren != citizen->childrenUnder18) {
+        citizen->deduction[0].category[1] = 0;
+    } else if (citizen->childrenUnder18 <= 2) {
+        citizen->deduction[0].category[1] = 1;
+    } else if (citizen->childrenUnder18 <= 4) {
+        citizen->deduction[0].category[1] = 2;
+    } else if (citizen->childrenUnder18 <= 6) {
+        citizen->deduction[0].category[1] = 3;
+    } else {
+        citizen->deduction[0].category[1] = 4;
+    }
+}
+
 
 void SaveUserData()
 {
@@ -385,41 +399,27 @@ void LoadUserData()
     fclose(file_path);
 }
 
-void RegisterUser()
-{
-    ClearScreen(); // added clear screen
-    if (registered_user >= 30)
-    {                                            // check the count 30 5 , prevent overflow
-        printf("Maximum user limit reached.\n"); // reject add account if already achieve the max number
-        getch();                                 // wait till the user want to proceed
+void RegisterUser() {
+    ClearScreen();
+    if (registered_user >= MAX_CITIZENS) {
+        printf("Maximum user limit (%d) reached.\n", MAX_CITIZENS);
+        getch();
         return;
     }
 
     struct Citizen *new_citizen = &citizen_list[registered_user];
-    char temp_input[150]; // Use a larger buffer to catch the overflow to let user enter over 50
+    memset(new_citizen, 0, sizeof(struct Citizen));
+    char temp_input[150];
 
-    // Get Id
-    while (1)
-    {
-        printf("---Register New User--- (press 0 to cancel)\n"); // update the message to register new user
-        printf("Citizen ID (Max 12): ");
+    while (1) {
+        printf("--- Register New User --- (press 0 to cancel)\n");
+        printf("Citizen ID (Exact 12 characters): ");
         fgets(temp_input, sizeof(temp_input), stdin);
 
-        // Check for Return/Cancel first
         if (strcmp(temp_input, "0\n") == 0)
-            return; // if cancel then exit to main menu
+            return;
 
-        if (strchr(temp_input, '\n') == NULL)
-        {
-            printf("[!] Error: Invalid ID Number!\n");
-            ClearInputBuffer();
-            getch();
-            ClearScreen();
-            continue;
-        }
-
-        if (strlen(temp_input) != 13)
-        {
+        if (strchr(temp_input, '\n') == NULL) {
             printf("[!] Error: Invalid ID Number!\n");
             ClearInputBuffer();
             getch();
@@ -428,32 +428,37 @@ void RegisterUser()
         }
 
         RemoveNewLine(temp_input);
-        if (strlen(temp_input) >= 20 || CheckInputBlank(temp_input))
-        {
-            printf("[!] Error: Username must be 1-50 characters.\n");
+        if (strlen(temp_input) != 12 || CheckInputBlank(temp_input)) {
+            printf("[!] Error: Citizen ID must be exactly 12 characters!\n");
             getch();
-            ClearScreen(); // ClearScreen if error message
+            ClearScreen();
             continue;
         }
 
-        // Check redundancy id
+        if (!CheckIdUniqueness(temp_input)) {
+            printf("[!] Error: Citizen ID already exists!\n");
+            getch();
+            ClearScreen();
+            continue;
+        }
+
+        if (!ConfirmAction("Confirm Citizen ID?")) {
+            ClearScreen();
+            continue;
+        }
 
         strcpy(new_citizen->citizenId, temp_input);
         break;
     }
 
-    // Get Username
-    while (1)
-    {
-        printf("Username (Max 50): ");
+    while (1) {
+        printf("Username (Max 49 characters): ");
         fgets(temp_input, sizeof(temp_input), stdin);
 
-        // Check for Return/Cancel first
         if (strcmp(temp_input, "0\n") == 0)
-            return; // if cancel then exit to main menu
+            return;
 
-        if (strchr(temp_input, '\n') == NULL)
-        {
+        if (strchr(temp_input, '\n') == NULL) {
             printf("[!] Error: Username too long!\n");
             ClearInputBuffer();
             getch();
@@ -462,16 +467,53 @@ void RegisterUser()
         }
 
         RemoveNewLine(temp_input);
-        if (strlen(temp_input) >= 20 || CheckInputBlank(temp_input))
-        {
-            printf("[!] Error: Username must be 1-50 characters.\n");
+        if (strlen(temp_input) >= 50 || CheckInputBlank(temp_input)) {
+            printf("[!] Error: Username must be 1-49 characters.\n");
             getch();
-            ClearScreen(); // ClearScreen if error message
+            ClearScreen();
             continue;
         }
+
+        if (!ConfirmAction("Confirm Username?")) {
+            continue;
+        }
+
         strcpy(new_citizen->citizenName, temp_input);
         break;
     }
+
+    while (1) {
+        printf("Password (Max 19 characters): ");
+        fgets(temp_input, sizeof(temp_input), stdin);
+
+        if (strchr(temp_input, '\n') == NULL) {
+            printf("[!] Error: Password too long!\n");
+            ClearInputBuffer();
+            getch();
+            continue;
+        }
+
+        RemoveNewLine(temp_input);
+        if (strlen(temp_input) >= 20 || CheckInputBlank(temp_input)) {
+            printf("[!] Error: Password must be 1-19 characters.\n");
+            getch();
+            continue;
+        }
+
+        if (!ConfirmAction("Confirm Password?")) {
+            continue;
+        }
+
+        strcpy(new_citizen->citizenPassword, temp_input);
+        break;
+    }
+
+    registered_user++;
+    new_citizen->LoginCount = 0;
+    SaveUserData();
+    printf("\nNew User Registration Success!\nPress any key to continue...");
+    getch();
+}
 
     // Get Password
     while (1)
