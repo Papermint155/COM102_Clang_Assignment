@@ -1119,6 +1119,7 @@ void PrintadminSummaryDashboard(int selected_cats[], int cat_count, double thres
 
 
 
+
 void PrintDashBoard(int user_index)
 {
     CalculateTax(user_index); // Ensure tax calculations are up-to-date
