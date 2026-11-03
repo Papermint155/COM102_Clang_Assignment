@@ -1198,50 +1198,160 @@ Tax Per Month :
 
 */
 
-void PrintCitizenInfo(int user_index)
-{
+void PrintCitizenInfo(int user_index) {
+    CalculateTax(user_index);
     char filename[100];
-    snprintf(filename,100, "Citizen_%s_Info.txt", citizen_list[user_index].citizenId);
-    FILE *file_path = fopen(filename, "w"); // 'wb' = write binary
-    // FILE *file_path = fopen("userdata.txt", "w"); // 'wb' = write binary
-    if (file_path == NULL)
-    {                                       // check weather it is no file
-        printf("[!] Error saving data!\n"); // if cant save , print error data
+    snprintf(filename, sizeof(filename), "Citizen_%s_Info.txt", citizen_list[user_index].citizenId);
+    FILE *file_path = fopen(filename, "w");
+    if (file_path == NULL) {
+        printf("[!] Error saving data!\n");
         return;
     }
+
     struct Citizen *Citizen = &citizen_list[user_index];
-    // mark
-    fprintf(file_path,"-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path,"========================================= Tax Dashboard =========================================\n");
-    fprintf(file_path,"-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path,"Hi, %s\n", Citizen->citizenName);
-    fprintf(file_path,"-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path,"Citizen ID: %s\n", Citizen->citizenId);
-    fprintf(file_path,"Age: %d\n", Citizen->age);
-    fprintf(file_path,"Marital Status: %s\n", Citizen->martialStatus ? "Married" : "Single");
-    fprintf(file_path,"-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path,"Number of Children: %d\n", Citizen->numberOfChildren);
-    fprintf(file_path,"Number of Children Under 18: %d\n", Citizen->childrenUnder18);
-    fprintf(file_path,"Special Healthcare Status: %s\n", Citizen->specialHealthcare ? "Yes" : "No");
-    fprintf(file_path,"-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path,"Annual Income: %82.2f\n", Citizen->annualIncome);
-    fprintf(file_path,"-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path,"Deduction Category Available:\n");
-    fprintf(file_path,"[1] Marital Status Deduction: %s %63.2f\n", Citizen->deduction[0].category[0] ? "Yes" : "No", Citizen->martialStatus ? 9000.0 : 0.0);
-    fprintf(file_path,"[2] Children Deduction (Deduction Category): %s %20.2f\n", childTablestring[Citizen->deduction[0].category[1]], childTable[Citizen->deduction[0].category[1]].amount);
-    fprintf(file_path,"[3] Special Healthcare Deduction: %s %59.2f\n", Citizen->deduction[0].category[2] ? "Yes" : "No", Citizen->specialHealthcare ? 5000.0 : 0.0);
-    fprintf(file_path,"-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path,"Total Deduction: %80.2f\n", Citizen->totalDeduction);
-    fprintf(file_path,"-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path,"Taxable Income: %81.2f\n", Citizen->taxableIncome);
-    fprintf(file_path,"-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path,"Tax Rate: %86.2f%%\n", lookupTaxRate(Citizen->taxableIncome, brackets, 7) * 100);
-    fprintf(file_path,"-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path,"Income Tax: %85.2f\n", Citizen->incomeTax);
-    fprintf(file_path,"-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path,"Tax Per Month: %82.2f\n", Citizen->incomeTax / 12);
-    fprintf(file_path,"-------------------------------------------------------------------------------------------------\n");
+    int child_cat = Citizen->deduction[0].category[1];
+    double child_deduction_amt = lookupChildAllowance(Citizen->numberOfChildren, Citizen->childrenUnder18, childTable, 4);
+
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
+    fprintf(file_path, "========================================= Tax Dashboard =========================================\n");
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
+    fprintf(file_path, "Hi, %s\n", Citizen->citizenName);
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
+    fprintf(file_path, "Citizen ID: %s\n", Citizen->citizenId);
+    fprintf(file_path, "Age: %d\n", Citizen->age);
+    fprintf(file_path, "Marital Status: %s\n", Citizen->martialStatus ? "Married" : "Single");
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
+    fprintf(file_path, "Number of Children: %d\n", Citizen->numberOfChildren);
+    fprintf(file_path, "Number of Children Under 18: %d\n", Citizen->childrenUnder18);
+    fprintf(file_path, "Special Healthcare Status: %s\n", Citizen->specialHealthcare ? "Yes" : "No");
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
+    fprintf(file_path, "Annual Income: %82.2f\n", Citizen->annualIncome);
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
+    fprintf(file_path, "Deduction Category Available:\n");
+    fprintf(file_path, "[1] Marital Status Deduction: %-5s %61.2f\n",
+            Citizen->martialStatus ? "Yes" : "No",
+            Citizen->martialStatus ? 5000.0 : 0.0);
+    fprintf(file_path, "[2] Children Deduction: %-42s %30.2f\n",
+            childTablestring[child_cat],
+            child_deduction_amt);
+    fprintf(file_path, "[3] Special Healthcare Deduction: %-5s %57.2f\n",
+            Citizen->specialHealthcare ? "Yes" : "No",
+            Citizen->specialHealthcare ? 20000.0 : 0.0);
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
+    fprintf(file_path, "Total Deduction: %80.2f\n", Citizen->totalDeduction);
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
+    fprintf(file_path, "Taxable Income: %81.2f\n", Citizen->taxableIncome);
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
+    fprintf(file_path, "Tax Rate: %86.2f%%\n", lookupTaxRate(Citizen->taxableIncome, brackets, 7) * 100);
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
+    fprintf(file_path, "Income Tax: %85.2f\n", Citizen->incomeTax);
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
+    fprintf(file_path, "Tax Per Month: %82.2f\n", Citizen->incomeTax / 12.0);
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
     fclose(file_path);
+}
+
+void ViewAllCitizens() {
+    ClearScreen();
+    if (registered_user == 0) {
+        printf("[!] No citizens registered yet.\nPress any key to return...");
+        getch();
+        return;
+    }
+
+    struct Citizen all_citizens[MAX_CITIZENS];
+    for (int i = 0; i < registered_user; i++) {
+        CalculateTax(i);
+        all_citizens[i] = citizen_list[i];
+    }
+
+    ShowAndPrintCitizenTable(all_citizens, registered_user);
+}
+
+void AdminAddCitizen() {
+    ClearScreen();
+    if (registered_user >= MAX_CITIZENS) {
+        printf("[!] Maximum user limit (%d) reached.\n", MAX_CITIZENS);
+        getch();
+        return;
+    }
+
+    int idx = registered_user;
+    struct Citizen *new_citizen = &citizen_list[idx];
+    memset(new_citizen, 0, sizeof(struct Citizen));
+    char temp_input[150];
+
+    while (1) {
+        printf("--- Admin: Add New Citizen --- (press 0 to cancel)\n");
+        printf("Citizen ID (Exact 12 characters): ");
+        fgets(temp_input, sizeof(temp_input), stdin);
+
+        if (strcmp(temp_input, "0\n") == 0)
+            return;
+
+        if (strchr(temp_input, '\n') == NULL) {
+            printf("[!] Error: Input too long!\n");
+            ClearInputBuffer();
+            getch();
+            ClearScreen();
+            continue;
+        }
+
+        RemoveNewLine(temp_input);
+        if (strlen(temp_input) != 12 || CheckInputBlank(temp_input)) {
+            printf("[!] Error: Citizen ID must be 12 characters!\n");
+            getch();
+            ClearScreen();
+            continue;
+        }
+
+        if (!CheckIdUniqueness(temp_input)) {
+            printf("[!] Error: Citizen ID already exists!\n");
+            getch();
+            ClearScreen();
+            continue;
+        }
+
+        if (!ConfirmAction("Confirm Citizen ID?")) {
+            ClearScreen();
+            continue;
+        }
+
+        strcpy(new_citizen->citizenId, temp_input);
+        strcpy(new_citizen->citizenPassword, temp_input); // Password = Citizen ID
+        break;
+    }
+
+    while (1) {
+        printf("Citizen Full Name (Max 49 characters): ");
+        fgets(temp_input, sizeof(temp_input), stdin);
+
+        if (strchr(temp_input, '\n') == NULL) {
+            printf("[!] Error: Name too long!\n");
+            ClearInputBuffer();
+            getch();
+            continue;
+        }
+
+        RemoveNewLine(temp_input);
+        if (strlen(temp_input) >= 50 || CheckInputBlank(temp_input)) {
+            printf("[!] Error: Name must be 1-49 characters.\n");
+            continue;
+        }
+
+        if (!ConfirmAction("Confirm Citizen Name?")) {
+            continue;
+        }
+
+        strcpy(new_citizen->citizenName, temp_input);
+        break;
+    }
+
+    registered_user++;
+    new_citizen->LoginCount = 2;
+    GetCitizenInfo(idx);
+    printf("\n[+] Citizen added! Default password set to Citizen ID (%s).\nPress any key to return...", new_citizen->citizenId);
+    getch();
 }
 
 int main()
