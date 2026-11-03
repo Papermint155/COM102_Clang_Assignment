@@ -548,23 +548,17 @@ void RegisterUser() {
     getch(); // wait till the user want to proceed ;
 }
 
-int UserLogin(){ // same logic as above so i direct use the code from register part and change the message and the logic of check username and password
-    int user_index;
-    char input_ID[25], input_password[25]; // Use slightly larger buffers to detect
+int UserLogin() {
+    char input_ID[50], input_password[50];
     ClearScreen();
-    if(registered_user == 0){ // if no user in the system, then directly return to main menu
-        printf("No user found. Please register first! \nPress any key to return...");
-        getch();
-        return -1; // return -1 to indicate login failure
-    }
-    //Get Username
+
     while (1) {
-        printf("---Login--- (press 0 to cancel)\n"); // update the message to login
-        printf("ID (Max 12): ");
+        printf("--- Login --- (press 0 to cancel)\n");
+        printf("ID (12 characters): ");
         fgets(input_ID, sizeof(input_ID), stdin);
 
-        // Check for Return/Cancel first
-        if (strcmp(input_ID, "0\n") == 0) return -1; //if cancel then exit to main menu
+        if (strcmp(input_ID, "0\n") == 0)
+            return -1;
 
         if (strchr(input_ID, '\n') == NULL) {
             printf("[!] Error: ID too long!\n");
@@ -575,8 +569,8 @@ int UserLogin(){ // same logic as above so i direct use the code from register p
         }
 
         RemoveNewLine(input_ID);
-        if (strlen(input_ID) != 12 || CheckInputBlank(input_ID)) {
-            printf("[!] Error: ID must be 1-12 characters.\n");
+        if (strcmp(input_ID, "admin") != 0 && (strlen(input_ID) != 12 || CheckInputBlank(input_ID))) {
+            printf("[!] Error: ID must be 12 characters.\n");
             getch();
             ClearScreen();
             continue;
@@ -584,9 +578,8 @@ int UserLogin(){ // same logic as above so i direct use the code from register p
         break;
     }
 
-    //Get password
     while (1) {
-        printf("Password (Max 20): ");
+        printf("Password (Max 19): ");
         fgets(input_password, sizeof(input_password), stdin);
 
         if (strchr(input_password, '\n') == NULL) {
@@ -602,240 +595,254 @@ int UserLogin(){ // same logic as above so i direct use the code from register p
             continue;
         }
         break;
-        ClearInputBuffer();
     }
-    for (int i = 0; i < registered_user; i++) { //loop through the student list to find the username and the password got match??
-        if (strcmp(input_ID, citizen_list[i].citizenId) == 0 && strcmp(input_password, citizen_list[i].citizenPassword) == 0) {
-            citizen_list[i].LoginCount++; // Increment login count
-            return i; // if have match return the index of the student in the array 
+
+    if (strcmp(input_ID, "admin") == 0 && strcmp(input_password, "admin123") == 0) {
+        return -2; // Admin login
+    }
+
+    if (registered_user == 0) {
+        printf("No user found. Please register first!\nPress any key to return...");
+        getch();
+        return -1;
+    }
+
+    for (int i = 0; i < registered_user; i++) {
+        if (strcmp(input_ID, citizen_list[i].citizenId) == 0 &&
+            strcmp(input_password, citizen_list[i].citizenPassword) == 0) {
+            citizen_list[i].LoginCount++;
+            return i;
         }
     }
-    printf("\n[!] Invalid login. \nPress any key to continue...");
+
+    printf("\n[!] Invalid login.\nPress any key to continue...");
     getch();
     return -1;
 }
 
-void GetCitizenInfo(int user_index){
+void GetCitizenInfo(int user_index) {
     struct Citizen *citizen = &citizen_list[user_index];
     while (1) {
         ClearScreen();
-        printf("Enter Age: ");
-        if (scanf("%d", &citizen->age) == 1 && citizen->age > 17 && citizen->age < 150) {
+        printf("Enter Age (18 - 149): ");
+        if (scanf("%d", &citizen->age) == 1 && citizen->age >= 18 && citizen->age < 150) {
             ClearInputBuffer();
-            break;
+            if (ConfirmAction("Confirm Age?"))
+                break;
         } else {
             printf("Please enter a valid age between 18 and 149.\n");
             ClearInputBuffer();
+            getch();
         }
     }
-        while (1) {
-            ClearScreen();
-            printf("Enter Martial Status (0 for Single, 1 or other for Married): ");
-            if (scanf("%d", &citizen->martialStatus) == 1 && (citizen->martialStatus == 0 || citizen->martialStatus == 1)) {
-                ClearInputBuffer();
-                if (citizen->martialStatus == 0) {
-                    citizen->deduction[0].category[0] = 0; // Single
-                } else {
-                    citizen->deduction[0].category[0] = 1; // Married
-                }
-                break;
-            } else {
-                printf("Please enter 0 for Single or 1 for Married.\n");
-                ClearInputBuffer();
-            }
-        }
 
-        while (1) {
-            ClearScreen();
-            citizen->annualIncome = CheckValidDouble("Enter Annual Income: $");
-            break;
-        }
-
-        while(1) {
-            ClearScreen();
-            printf("Enter Number of Children: ");
-            if (scanf("%d", &citizen->numberOfChildren) == 1 && citizen->numberOfChildren >= 0 && citizen->numberOfChildren < 20) {
-                ClearInputBuffer();
+    while (1) {
+        ClearScreen();
+        printf("Enter Marital Status (0 for Single, 1 for Married): ");
+        if (scanf("%d", &citizen->martialStatus) == 1 &&
+            (citizen->martialStatus == 0 || citizen->martialStatus == 1)) {
+            ClearInputBuffer();
+            if (ConfirmAction("Confirm Marital Status?")) {
+                citizen->deduction[0].category[0] = citizen->martialStatus;
                 break;
-            } else {
-                printf("Please enter a valid number of children (0-19).\n");
-                ClearInputBuffer();
             }
+        } else {
+            printf("Please enter 0 for Single or 1 for Married.\n");
+            ClearInputBuffer();
+            getch();
         }
-
-        while(1) {
-            ClearScreen();
-            printf("Enter Number of Children Under 18: ");
-            if (scanf("%d", &citizen->childrenUnder18) == 1 && citizen->childrenUnder18 >= 0 && citizen->childrenUnder18 <= citizen->numberOfChildren) {
-                ClearInputBuffer();
-                switch (citizen->childrenUnder18) {
-                    case 1:
-                    case 2:
-                        citizen->deduction[0].category[1] = 1;
-                        break;
-                    case 3:
-                    case 4:
-                        citizen->deduction[0].category[1] = 2;
-                        break;
-                    case 5:
-                    case 6:
-                        citizen->deduction[0].category[1] = 3;
-                        break;
-                    default:
-                        citizen->deduction[0].category[1] = 4;
-                        break;
-                }
-                break;
-            } else {
-                printf("Please enter a valid number of children under 18 (0-%d).\n", citizen->numberOfChildren);
-                ClearInputBuffer();
-            }
-        }
-
-        while(1) {
-            ClearScreen();
-            printf("Special Healthcare Status (any people in your household with special healthcare needs)(0 for No, 1 for Yes): ");
-            if (scanf("%d", &citizen->specialHealthcare) == 1 && (citizen->specialHealthcare == 0 || citizen->specialHealthcare == 1)) {
-                ClearInputBuffer();
-                if (citizen->specialHealthcare == 0) {
-                    citizen->deduction[0].category[2] = 0; // No special healthcare
-                } else {
-                    citizen->deduction[0].category[2] = 1; // Yes special healthcare
-                }
-                break;
-            } else {
-                printf("Please enter 0 for No or 1 for Yes.\n");
-                ClearInputBuffer();
-            }
     }
+
+    ClearScreen();
+    citizen->annualIncome = CheckValidDouble("Enter Annual Income: RM ");
+
+    while (1) {
+        ClearScreen();
+        printf("Enter Number of Children (0 - 19): ");
+        if (scanf("%d", &citizen->numberOfChildren) == 1 &&
+            citizen->numberOfChildren >= 0 && citizen->numberOfChildren < 20) {
+            ClearInputBuffer();
+            if (ConfirmAction("Confirm Number of Children?"))
+                break;
+        } else {
+            printf("Please enter a valid number of children (0-19).\n");
+            ClearInputBuffer();
+            getch();
+        }
+    }
+
+    while (1) {
+        ClearScreen();
+        printf("Enter Number of Children Under 18 (0 - %d): ", citizen->numberOfChildren);
+        if (scanf("%d", &citizen->childrenUnder18) == 1 &&
+            citizen->childrenUnder18 >= 0 &&
+            citizen->childrenUnder18 <= citizen->numberOfChildren) {
+            ClearInputBuffer();
+            if (ConfirmAction("Confirm Number of Children Under 18?")) {
+                UpdateChildCategoryIndex(citizen);
+                break;
+            }
+        } else {
+            printf("Please enter a valid number of children under 18 (0-%d).\n", citizen->numberOfChildren);
+            ClearInputBuffer();
+            getch();
+        }
+    }
+
+    while (1) {
+        ClearScreen();
+        printf("Special Healthcare Status (0 for No, 1 for Yes): ");
+        if (scanf("%d", &citizen->specialHealthcare) == 1 &&
+            (citizen->specialHealthcare == 0 || citizen->specialHealthcare == 1)) {
+            ClearInputBuffer();
+            if (ConfirmAction("Confirm Special Healthcare Status?")) {
+                citizen->deduction[0].category[2] = citizen->specialHealthcare;
+                break;
+            }
+        } else {
+            printf("Please enter 0 for No or 1 for Yes.\n");
+            ClearInputBuffer();
+            getch();
+        }
+    }
+
+    CalculateTax(user_index);
     SaveUserData();
 }
 
-void EditCitizenInfo(int user_index, int field_choice)
-{
+void EditCitizenInfo(int user_index, int field_choice) {
+    if (field_choice == 0)
+        return;
+
     struct Citizen *citizen = &citizen_list[user_index];
-    switch (field_choice)
-    {
-    case 1: // Edit Age
+    switch (field_choice) {
+    case 1:
         while (1) {
             ClearScreen();
-            printf("Enter New Age: ");
-            if (scanf("%d", &citizen->age) == 1 && citizen->age > 0 && citizen->age < 150) {
+            printf("Enter New Age (18 - 149): ");
+            if (scanf("%d", &citizen->age) == 1 && citizen->age >= 18 && citizen->age < 150) {
                 ClearInputBuffer();
-                break;
+                if (ConfirmAction("Confirm New Age?"))
+                    break;
             } else {
-                printf("Please enter a valid age between 1 and 149.\n");
+                printf("Please enter a valid age between 18 and 149.\n");
                 ClearInputBuffer();
+                getch();
             }
         }
         break;
-    case 2: // Edit Martial Status
+    case 2:
         while (1) {
             ClearScreen();
-            printf("Enter New Martial Status (0 for Single, 1 or other for Married): ");
-            if (scanf("%d", &citizen->martialStatus) == 1 && (citizen->martialStatus == 0 || citizen->martialStatus == 1)) {
+            printf("Enter New Marital Status (0 for Single, 1 for Married): ");
+            if (scanf("%d", &citizen->martialStatus) == 1 &&
+                (citizen->martialStatus == 0 || citizen->martialStatus == 1)) {
                 ClearInputBuffer();
-                if (citizen->martialStatus == 0) {
-                    citizen->deduction[0].category[0] = 0; // Single
-                } else {
-                    citizen->deduction[0].category[0] = 1; // Married
+                if (ConfirmAction("Confirm New Marital Status?")) {
+                    citizen->deduction[0].category[0] = citizen->martialStatus;
+                    break;
                 }
-                break;
             } else {
                 printf("Please enter 0 for Single or 1 for Married.\n");
                 ClearInputBuffer();
+                getch();
             }
         }
         break;
-    case 3: // Edit Annual Income
+    case 3:
+        ClearScreen();
+        citizen->annualIncome = CheckValidDouble("Enter New Annual Income: RM ");
+        break;
+    case 4:
         while (1) {
             ClearScreen();
-            citizen->annualIncome = CheckValidDouble("Enter New Annual Income: $");
-            break;
-        }
-        break;
-    case 4: // Edit Number of Children
-        while(1) {
-            ClearScreen();
-            printf("Enter New Number of Children: ");
-            if (scanf("%d", &citizen->numberOfChildren) == 1 && citizen->numberOfChildren >= 0 && citizen->numberOfChildren < 20) {
+            printf("Enter New Number of Children (0 - 19): ");
+            if (scanf("%d", &citizen->numberOfChildren) == 1 &&
+                citizen->numberOfChildren >= 0 && citizen->numberOfChildren < 20) {
                 ClearInputBuffer();
+                if (ConfirmAction("Confirm New Number of Children?")) {
+                    if (citizen->childrenUnder18 > citizen->numberOfChildren) {
+                        citizen->childrenUnder18 = citizen->numberOfChildren;
+                    }
+                    UpdateChildCategoryIndex(citizen);
+                    break;
+                }
             } else {
                 printf("Please enter a valid number of children (0-19).\n");
                 ClearInputBuffer();
-            }
-        }
-    case 5: // Edit Number of Children Under 18
-        while(1) {
-            ClearScreen();
-            printf("Enter New Number of Children Under 18: ");
-            if (scanf("%d", &citizen->childrenUnder18) == 1 && citizen->childrenUnder18 >= 0 && citizen->childrenUnder18 <= citizen->numberOfChildren) {
-                ClearInputBuffer();
-                switch (citizen->childrenUnder18) {
-                    case 1:
-                    case 2:
-                        citizen->deduction[0].category[1] = 1;
-                        break;
-                    case 3:
-                    case 4:
-                        citizen->deduction[0].category[1] = 2;
-                        break;
-                    case 5:
-                    case 6:
-                        citizen->deduction[0].category[1] = 3;
-                        break;
-                    default:
-                        citizen->deduction[0].category[1] = 4;
-                        break;
-                }
-                break;
-            } else {
-                printf("Please enter a valid number of children under 18 (0-%d).\n", citizen->numberOfChildren);
-                ClearInputBuffer();
+                getch();
             }
         }
         break;
-    case 6: // Edit Special Healthcare Status
-        while(1) {
+    case 5:
+        while (1) {
             ClearScreen();
-            printf("Special Healthcare Status (any people in your household with special healthcare needs)(0 for No, 1 for Yes): ");
-            if (scanf("%d", &citizen->specialHealthcare) == 1 && (citizen->specialHealthcare == 0 || citizen->specialHealthcare == 1)) {
+            printf("Enter New Number of Children Under 18 (0 - %d): ", citizen->numberOfChildren);
+            if (scanf("%d", &citizen->childrenUnder18) == 1 &&
+                citizen->childrenUnder18 >= 0 &&
+                citizen->childrenUnder18 <= citizen->numberOfChildren) {
                 ClearInputBuffer();
-                if (citizen->specialHealthcare == 0) {
-                    citizen->deduction[0].category[2] = 0; // No special healthcare
-                } else {
-                    citizen->deduction[0].category[2] = 1; // Yes special healthcare
+                if (ConfirmAction("Confirm New Number of Children Under 18?")) {
+                    UpdateChildCategoryIndex(citizen);
+                    break;
                 }
-                break;
+            } else {
+                printf("Please enter a valid number of children under 18 (0-%d).\n", citizen->numberOfChildren);
+                ClearInputBuffer();
+                getch();
+            }
+        }
+        break;
+    case 6:
+        while (1) {
+            ClearScreen();
+            printf("Special Healthcare Status (0 for No, 1 for Yes): ");
+            if (scanf("%d", &citizen->specialHealthcare) == 1 &&
+                (citizen->specialHealthcare == 0 || citizen->specialHealthcare == 1)) {
+                ClearInputBuffer();
+                if (ConfirmAction("Confirm Special Healthcare Status?")) {
+                    citizen->deduction[0].category[2] = citizen->specialHealthcare;
+                    break;
+                }
             } else {
                 printf("Please enter 0 for No or 1 for Yes.\n");
                 ClearInputBuffer();
+                getch();
             }
         }
         break;
     default:
         printf("[!] Error: Invalid field choice.\n");
+        break;
     }
+
+    CalculateTax(user_index);
     SaveUserData();
 }
 
-void CalculateTax(int user_index){
+void CalculateTax(int user_index) {
     struct Citizen *citizen = &citizen_list[user_index];
     citizen->totalDeduction = 0.0;
-    // Calculate deductions based on marital status
+
     if (citizen->martialStatus) {
-        citizen->totalDeduction += 5000.0; // Married deduction
+        citizen->totalDeduction += 5000.0;
     }
     if (citizen->numberOfChildren > 0) {
-        citizen->totalDeduction += lookupChildAllowance(citizen->numberOfChildren, citizen->childrenUnder18, childTable, 4);
+        citizen->totalDeduction += lookupChildAllowance(
+            citizen->numberOfChildren, citizen->childrenUnder18, childTable, 4);
     }
     if (citizen->specialHealthcare) {
-        citizen->totalDeduction += 20000.0; // Special healthcare deduction
+        citizen->totalDeduction += 20000.0;
     }
+
+    UpdateChildCategoryIndex(citizen);
+    citizen->deduction[0].deductionAmount = citizen->totalDeduction;
+
     citizen->taxableIncome = citizen->annualIncome - citizen->totalDeduction;
-    if (citizen->taxableIncome < 0) {
-        citizen->taxableIncome = 0.0; // Ensure taxable income doesn't go negative
+    if (citizen->taxableIncome < 0.0) {
+        citizen->taxableIncome = 0.0;
     }
+
     citizen->incomeTax = citizen->taxableIncome * lookupTaxRate(citizen->taxableIncome, brackets, 7);
     SaveUserData();
 }
