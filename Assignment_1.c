@@ -150,6 +150,28 @@ void ClearInputBuffer()
         ; // Discard characters remaining in the input buffer to prevent skipping next input
 }
 
+void ClearScreen()
+{
+    system("cls");
+    // clrscr(); cant use (got bug)
+    //  printf("\033[H\033[2J"); This method not working (By printing a lot of new line)
+    //  fflush(stdout);
+}
+
+int ConfirmAction(const char *prompt) {
+    printf("%s (Press 'Y' or Enter to confirm, 'N' to cancel/redo): ", prompt);
+    while (1) {
+        int ch = getch();
+        if (ch == 'y' || ch == 'Y' || ch == 13) {
+            printf("Yes\n");
+            return 1;
+        } else if (ch == 'n' || ch == 'N') {
+            printf("No\n");
+            return 0;
+        }
+    }
+}
+
 int CheckInputBlank(char *str)
 { // debug at here, forgot it will return int
     if (strlen(str) == 0)
@@ -182,14 +204,6 @@ double CheckValidDouble(char *message)
         }
     }
     return value;
-}
-
-void ClearScreen()
-{
-    system("cls");
-    // clrscr(); cant use (got bug)
-    //  printf("\033[H\033[2J"); This method not working (By printing a lot of new line)
-    //  fflush(stdout);
 }
 
 int SelectOption(char option[][40], int total_choice)
@@ -236,12 +250,78 @@ int SelectOption(char option[][40], int total_choice)
     */
 }
 
-int CheckIdUniqueness(char *id)
-{
-    for (int i = 0; i < registered_user; i++)
-    {
-        if (strcmp(citizen_list[i].citizenId, id) == 0)
-        {
+void SelectCitizenDashboardCategories(int dashboard_ntb_print[], int *counter) {
+    *counter = 0;
+    int current_selection = 0;
+
+    while (*counter < 11) {
+        ClearScreen();
+        printf("Please select the Categories to display/print on the Dashboard:\n");
+        printf("(Select 'All Categories (Default)' for all, or 'Done / Proceed' when finished)\n");
+        printf("-------------------------------------------------------------------------------------------------\n");
+        printf("Currently Selected (%d): ", *counter);
+        if (*counter == 0) {
+            printf("None");
+        } else {
+            for (int k = 0; k < *counter; k++) {
+                printf("[%s] ", admin_category_Selection[dashboard_ntb_print[k]]);
+            }
+        }
+        printf("\n-------------------------------------------------------------------------------------------------\n\n");
+
+        for (int i = 0; i < 13; i++) {
+            if (i == current_selection) {
+                printf("-> %s\n", admin_category_Selection[i]);
+            } else {
+                printf("   %s\n", admin_category_Selection[i]);
+            }
+        }
+
+        int key_pressed = getch();
+        if (key_pressed == 224 || key_pressed == 0) {
+            key_pressed = getch();
+            if (key_pressed == 72)
+                current_selection = (current_selection - 1 + 13) % 13;
+            if (key_pressed == 80)
+                current_selection = (current_selection + 1) % 13;
+        } else if (key_pressed == 13) {
+            if (current_selection == 0) { // Done / Proceed
+                if (*counter == 0) {
+                    // Default to all 11 categories if user pressed Done immediately
+                    for (int c = 1; c <= 11; c++) {
+                        dashboard_ntb_print[c - 1] = c;
+                    }
+                    *counter = 11;
+                }
+                break;
+            } else if (current_selection == 12) { // All Categories (Default)
+                for (int c = 1; c <= 11; c++) {
+                    dashboard_ntb_print[c - 1] = c;
+                }
+                *counter = 11;
+                break;
+            } else {
+                // Check if already selected to avoid duplicates
+                int already_added = 0;
+                for (int k = 0; k < *counter; k++) {
+                    if (dashboard_ntb_print[k] == current_selection) {
+                        already_added = 1;
+                        break;
+                    }
+                }
+                if (!already_added) {
+                    dashboard_ntb_print[*counter] = current_selection;
+                    (*counter)++;
+                }
+            }
+        }
+    }
+}
+
+
+int CheckIdUniqueness(char *id) {
+    for (int i = 0; i < registered_user; i++) {
+        if (strcmp(citizen_list[i].citizenId, id) == 0) {
             return 0; // ID is not unique
         }
     }
