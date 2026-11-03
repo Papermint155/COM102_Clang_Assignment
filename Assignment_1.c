@@ -330,35 +330,26 @@ int CheckIdUniqueness(char *id) {
 
 
 
-double lookupTaxRate(double taxableIncome, struct TaxBracket table[], int size)
-{
-    // Bracket 0: 0 to 48,000 inclusive
-    if (taxableIncome <= table[0].maxIncome)
-    {
+double lookupTaxRate(double taxableIncome, struct TaxBracket table[], int size) {
+    if (taxableIncome <= table[0].maxIncome) {
         return table[0].taxRate;
     }
-
-    for (int i = 1; i < size; i++)
-    {
-        if (taxableIncome > table[i].minIncome && taxableIncome <= table[i].maxIncome)
-        {
-            return table[i].taxRate; // found tax
+    for (int i = 1; i < size; i++) {
+        if (taxableIncome > table[i].minIncome && taxableIncome <= table[i].maxIncome) {
+            return table[i].taxRate;
         }
     }
     printf("[!] Error: Taxable income is out of the defined tax brackets.\n");
-    return 0; // Return an error value
+    return 0.0;
 }
 
 double lookupChildAllowance(int totalChildren, int under18, struct ChildAllowance table[], int size) {
-    // Must have children, and ALL children must be below 18
     if (totalChildren <= 0 || totalChildren != under18) {
-        return 0.0; 
+        return 0.0;
     }
-
-    // Loop through the table to "look up" the matching bracket
     for (int i = 0; i < size; i++) {
         if (totalChildren >= table[i].minChildren && totalChildren <= table[i].maxChildren) {
-            return table[i].amount; // Found the match! Return the RM amount
+            return table[i].amount;
         }
     }
     return 0.0;
