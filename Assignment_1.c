@@ -1084,6 +1084,100 @@ int CompareDoubles(const void *a, const void *b) {
     return (da > db) - (da < db);
 }
 
+void WriteSingleSummaryStat(FILE *stream, int stat_index, double threshold) {
+    int special_hc_count = 0, married_count = 0, single_count = 0;
+    int with_children = 0, with_children_u18 = 0, above_threshold = 0;
+    double total_annual_income = 0.0, total_taxable_income = 0.0;
+    double total_tax_collected = 0.0, total_deductions = 0.0;
+    double tax_array[MAX_CITIZENS];
+
+    for (int i = 0; i < registered_user; i++) {
+        CalculateTax(i);
+        if (citizen_list[i].specialHealthcare)
+            special_hc_count++;
+        if (citizen_list[i].martialStatus)
+            married_count++;
+        else
+            single_count++;
+        if (citizen_list[i].numberOfChildren > 0)
+            with_children++;
+        if (citizen_list[i].childrenUnder18 > 0)
+            with_children_u18++;
+        if (citizen_list[i].annualIncome > threshold)
+            above_threshold++;
+
+        total_annual_income += citizen_list[i].annualIncome;
+        total_taxable_income += citizen_list[i].taxableIncome;
+        total_tax_collected += citizen_list[i].incomeTax;
+        total_deductions += citizen_list[i].totalDeduction;
+        tax_array[i] = citizen_list[i].incomeTax;
+    }
+
+    double avg_annual_income = (registered_user > 0) ? (total_annual_income / registered_user) : 0.0;
+    double avg_taxable_income = (registered_user > 0) ? (total_taxable_income / registered_user) : 0.0;
+    double mean_tax = (registered_user > 0) ? (total_tax_collected / registered_user) : 0.0;
+
+    qsort(tax_array, registered_user, sizeof(double), CompareDoubles);
+    double median_tax = 0.0;
+    if (registered_user > 0) {
+        if (registered_user % 2 == 0)
+            median_tax = (tax_array[(registered_user / 2) - 1] + tax_array[registered_user / 2]) / 2.0;
+        else
+            median_tax = tax_array[registered_user / 2];
+    }
+
+    double variance_sum = 0.0;
+    for (int i = 0; i < registered_user; i++) {
+        variance_sum += pow(citizen_list[i].incomeTax - mean_tax, 2);
+    }
+    double std_dev_tax = (registered_user > 0) ? sqrt(variance_sum / registered_user) : 0.0;
+
+    switch (stat_index) {
+    case 1:
+        fprintf(stream, "%-62s : %d\n", adminSummaryDashboardChoice[1], registered_user);
+        break;
+    case 2:
+        fprintf(stream, "%-62s : %d\n", adminSummaryDashboardChoice[2], special_hc_count);
+        break;
+    case 3:
+        fprintf(stream, "%-62s : %d\n", adminSummaryDashboardChoice[3], married_count);
+        break;
+    case 4:
+        fprintf(stream, "%-62s : %d\n", adminSummaryDashboardChoice[4], single_count);
+        break;
+    case 5:
+        fprintf(stream, "Citizens with Annual Income > RM %-29.2f : %d\n", threshold, above_threshold);
+        break;
+    case 6:
+        fprintf(stream, "%-62s : RM %.2f\n", adminSummaryDashboardChoice[6], avg_annual_income);
+        break;
+    case 7:
+        fprintf(stream, "%-62s : RM %.2f\n", adminSummaryDashboardChoice[7], avg_taxable_income);
+        break;
+    case 8:
+        fprintf(stream, "%-62s : RM %.2f\n", adminSummaryDashboardChoice[8], total_tax_collected);
+        break;
+    case 9:
+        fprintf(stream, "%-62s : RM %.2f\n", adminSummaryDashboardChoice[9], total_deductions);
+        break;
+    case 10:
+        fprintf(stream, "%-62s : %d\n", adminSummaryDashboardChoice[10], with_children);
+        break;
+    case 11:
+        fprintf(stream, "%-62s : %d\n", adminSummaryDashboardChoice[11], with_children_u18);
+        break;
+    case 12:
+        fprintf(stream, "%-62s : RM %.2f\n", adminSummaryDashboardChoice[12], mean_tax);
+        break;
+    case 13:
+        fprintf(stream, "%-62s : RM %.2f\n", adminSummaryDashboardChoice[13], median_tax);
+        break;
+    case 14:
+        fprintf(stream, "%-62s : RM %.2f\n", adminSummaryDashboardChoice[14], std_dev_tax);
+        break;
+    }
+}
+
 
 int SelectSummaryDashboardCategories(int selected_cats[], int *cat_count, double *threshold) {
     *cat_count = 0;
