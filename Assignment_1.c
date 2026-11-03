@@ -986,7 +986,90 @@ void PrintCustomCitizenTableToFile(struct Citizen list[], int count, int dashboa
     printf("\n[+] Selected dashboard categories successfully printed to 'Citizen_Tax_report.txt'!\n");
 }
 
+void ShowAndPrintCitizenTable(struct Citizen matched_citizens[], int found) {
+    int dashboard_ntb_print[12];
+    int counter = 0;
 
+    // 1. Admin selects which categories to show (or "All Categories (Default)")
+    SelectCitizenDashboardCategories(dashboard_ntb_print, &counter);
+
+    // 2. Build a dynamic Sort menu containing ONLY the categories chosen above
+    char dynamic_sort_menu[13][40];
+    strcpy(dynamic_sort_menu[0], "No Sorting / Proceed");
+    for (int i = 0; i < counter; i++) {
+        int cat_idx = dashboard_ntb_print[i];
+        strcpy(dynamic_sort_menu[i + 1], admin_category_Selection[cat_idx]);
+    }
+
+    // Ask which of the selected categories to sort by
+    int sort_choice = SelectOption(dynamic_sort_menu, counter + 1);
+    if (sort_choice > 0) {
+        // Map the chosen option back to its actual category ID (1 to 11)
+        int actual_sort_category = dashboard_ntb_print[sort_choice - 1];
+        int sortorder = SelectOption(sort_order_menu, 2);
+        SortCitizens(matched_citizens, found, actual_sort_category, sortorder);
+    }
+
+    // 3. Display only the selected categories on screen
+    ClearScreen();
+    printf("Dashboard View (%d Citizens, %d Categories Selected):\n", found, counter);
+    printf("------------------------------------------------------------------------------------------------------------\n");
+    for (int j = 0; j < counter; j++) {
+        printf("%-18s | ", admin_category_Selection[dashboard_ntb_print[j]]);
+    }
+    printf("\n------------------------------------------------------------------------------------------------------------\n");
+
+    for (int i = 0; i < found; i++) {
+        struct Citizen *citizen = &matched_citizens[i];
+        for (int j = 0; j < counter; j++) {
+            int category = dashboard_ntb_print[j];
+            switch (category) {
+            case 1:
+                printf("%-18s | ", citizen->citizenId);
+                break;
+            case 2:
+                printf("%-18.18s | ", citizen->citizenName);
+                break;
+            case 3:
+                printf("%-18d | ", citizen->age);
+                break;
+            case 4:
+                printf("%-18s | ", citizen->martialStatus ? "Married" : "Single");
+                break;
+            case 5:
+                printf("RM %-15.2f | ", citizen->annualIncome);
+                break;
+            case 6:
+                printf("%-18d | ", citizen->numberOfChildren);
+                break;
+                case 7:
+                printf("%-18d | ", citizen->childrenUnder18);
+                break;
+            case 8:
+                printf("%-18s | ", citizen->specialHealthcare ? "Yes" : "No");
+                break;
+            case 9:
+                printf("RM %-15.2f | ", citizen->totalDeduction);
+                break;
+            case 10:
+                printf("RM %-15.2f | ", citizen->taxableIncome);
+                break;
+            case 11:
+                printf("RM %-15.2f | ", citizen->incomeTax);
+                break;
+            }
+        }
+        printf("\n");
+    }
+    printf("------------------------------------------------------------------------------------------------------------\n");
+
+    // 4. Ask if admin wants to print these exact selected categories to file
+    if (ConfirmAction("Do you want to print this custom dashboard to 'Citizen_Tax_report.txt'?")) {
+        PrintCustomCitizenTableToFile(matched_citizens, found, dashboard_ntb_print, counter);
+    }
+    printf("Press any key to return...");
+    getch();
+}
 
 // int CompareStrings(const void *a, const void *b) {
 //     const struct Citizen *citizenA = (const struct Citizen *)a;
