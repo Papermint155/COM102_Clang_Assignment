@@ -1078,6 +1078,70 @@ void ShowAndPrintCitizenTable(struct Citizen matched_citizens[], int found) {
 //     return _stricmp(citizenA->citizenName, citizenB->citizenName); 
 // }
 
+int SelectSummaryDashboardCategories(int selected_cats[], int *cat_count, double *threshold) {
+    *cat_count = 0;
+    *threshold = 50000.0;
+    int current_selection = 0;
+
+    while (*cat_count < 14) {
+        ClearScreen();
+        printf("Select Summary Categories to include in the Dashboard:\n");
+        printf("(Choose 'All Summary Categories (Default)' for all, or 'Done' when ready)\n");
+        printf("-------------------------------------------------------------------------------------------\n");
+        printf("Selected Count: %d / 14\n", *cat_count);
+        printf("-------------------------------------------------------------------------------------------\n\n");
+
+        for (int i = 0; i < 17; i++) {
+            if (i == current_selection) {
+                printf("-> %s\n", adminSummaryDashboardChoice[i]);
+            } else {
+                printf("   %s\n", adminSummaryDashboardChoice[i]);
+            }
+        }
+
+        int key_pressed = getch();
+        if (key_pressed == 224 || key_pressed == 0) {
+            key_pressed = getch();
+            if (key_pressed == 72)
+                current_selection = (current_selection - 1 + 17) % 17;
+            if (key_pressed == 80)
+                current_selection = (current_selection + 1) % 17;
+        } else if (key_pressed == 13) {
+            if (current_selection == 16) { // Back to Admin Menu
+                return 0;
+            } else if (current_selection == 0) { // Done / Show Selected
+                if (*cat_count == 0) {
+                    for (int c = 1; c <= 14; c++)
+                        selected_cats[c - 1] = c;
+                    *cat_count = 14;
+                }
+                return 1;
+            } else if (current_selection == 15) { // All Summary Categories (Default)
+                for (int c = 1; c <= 14; c++)
+                    selected_cats[c - 1] = c;
+                *cat_count = 14;
+                return 1;
+            } else {
+                int exists = 0;
+                for (int k = 0; k < *cat_count; k++) {
+                    if (selected_cats[k] == current_selection) {
+                        exists = 1;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    if (current_selection == 5) {
+                        ClearScreen();
+                        *threshold = CheckValidDouble("Enter Annual Income Threshold: RM ");
+                    }
+                    selected_cats[*cat_count] = current_selection;
+                    (*cat_count)++;
+                }
+            }
+        }
+    }
+    return 1;
+}
 
 void SearchInfobyCategory(int category_choice, char *search_term) {
     ClearScreen();
@@ -1191,6 +1255,9 @@ void adminSummaryDashboard(){
     getch();
     
 }
+
+
+
 /* draft od summard board 
 -------------------------------------------------------------------------------------------
 ------------------------ Summary of All Citizens Dashboard --------------------------------
@@ -1201,6 +1268,8 @@ Selected Cat 2
 -----------------------------------------------------------------------------------
 etc
 */
+
+
 
 void PrintadminSummaryDashboard(int selected_cats[], int cat_count, double threshold) {
     FILE *fp = fopen("Citizen_Tax_report.txt", "w");
