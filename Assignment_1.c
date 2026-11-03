@@ -70,6 +70,32 @@ char admin_category_Selection[13][40] = {
     "All Categories (Default)"
 };
 
+char sort_order_menu[2][40] = {
+    "Ascending Order (A-Z / Low to High)",
+    "Descending Order (Z-A / High to Low)"
+};
+
+// Added "Done / Show Dashboard" and "All Summary Categories (Default)"
+char adminSummaryDashboardChoice[17][60] = {
+    "Done / Show Selected Summary Dashboard",
+    "Total Number of Registered Citizens",
+    "Total Number of Citizens with Special Healthcare Needs",
+    "Total Number of Married Citizens",
+    "Total Number of Single Citizens",
+    "Total Number of Citizens with Annual Income above Threshold",
+    "Average Annual Income of All Citizens",
+    "Average Taxable Income of All Citizens",
+    "Total Income Tax Collected from All Citizens",
+    "Total Exemptions/Deductions Claimed by All Citizens",
+    "Total Number of Citizens with Children",
+    "Total Number of Citizens with Children Under 18",
+    "Mean income tax per citizen",
+    "Median income tax per citizen",
+    "Standard deviation of income tax per citizen",
+    "All Summary Categories (Default)",
+    "Back to Admin Menu"
+};
+
 struct ChildAllowance {
     char category[25];
     int minChildren;
@@ -93,14 +119,12 @@ char childTablestring[5][50] = {
     "Child allowance D: 7 or more children"
 };
 
-struct Deduction_Category
-{
+struct Deduction_Category{
     int category[3];
     double deductionAmount;
 };
 
-struct Citizen
-{
+struct Citizen{
     char citizenId[13];
     char citizenName[50];
     char citizenPassword[20];
@@ -370,8 +394,7 @@ void UpdateChildCategoryIndex(struct Citizen *citizen) {
 }
 
 
-void SaveUserData()
-{
+void SaveUserData(){
     //FILE *file_path = fopen("userdata.bin", "wb"); // 'wb' = write binary
      FILE *file_path = fopen("userdata.txt", "w"); // 'wb' = write binary
     if (file_path == NULL)
@@ -1352,6 +1375,85 @@ void AdminAddCitizen() {
     GetCitizenInfo(idx);
     printf("\n[+] Citizen added! Default password set to Citizen ID (%s).\nPress any key to return...", new_citizen->citizenId);
     getch();
+}
+
+void AdminMenu(int *running) {
+    int admin_logged_in = 1;
+    while (admin_logged_in) {
+        int choice = SelectOption(admin_menu, 8);
+        switch (choice) {
+        case 0: // View All Citizens (Choose Categories + Print Option)
+            ViewAllCitizens();
+            break;
+        case 1: { // Search Citizen Info (Choose Search Field -> Choose Display Categories -> Print Option)
+            int cat = SelectOption(admin_category_Selection, 12);
+            if (cat >= 1 && cat <= 11) {
+                ClearScreen();
+                char search_term[100];
+                printf("Searching by %s\n", admin_category_Selection[cat]);
+                printf("Enter search value: ");
+                fgets(search_term, sizeof(search_term), stdin);
+                RemoveNewLine(search_term);
+                SearchInfobyCategory(cat, search_term);
+            }
+            break;
+        }
+        case 2: // Add Citizen (Password = ID)
+            AdminAddCitizen();
+            break;
+        case 3: { // Edit Citizen Info
+            ClearScreen();
+            char target_id[30];
+            printf("Enter Citizen ID to edit: ");
+            fgets(target_id, sizeof(target_id), stdin);
+            RemoveNewLine(target_id);
+            int found_idx = -1;
+            for (int i = 0; i < registered_user; i++) {
+                if (strcmp(citizen_list[i].citizenId, target_id) == 0) {
+                    found_idx = i;
+                    break;
+                }
+            }
+            if (found_idx == -1) {
+                printf("[!] Citizen ID '%s' not found.\nPress any key to return...", target_id);
+                getch();
+            } else {
+                EditCitizenInfo(found_idx, SelectOption(edit_menu, 7));
+            }
+            break;
+        }
+        case 4: // Overall Statistics (Choose Summary Categories -> Show -> Ask to Print)
+            adminSummaryDashboard();
+            break;
+        case 5: { // Print Overall Statistics (Choose Summary Categories or Table Categories to Print)
+            int selected_cats[15];
+            int cat_count = 0;
+            double threshold = 50000.0;
+            if (SelectSummaryDashboardCategories(selected_cats, &cat_count, &threshold)) {
+                ClearScreen();
+                PrintadminSummaryDashboard(selected_cats, cat_count, threshold);
+                printf("Press any key to return...");
+                getch();
+            }
+            break;
+        }
+        case 6: // Logout
+            ClearScreen();
+            if (ConfirmAction("Logout ?")){
+                admin_logged_in = 0;
+            }
+
+            break;
+        case 7: // Exit
+            ClearScreen();
+            if (ConfirmAction("Exit ?"))
+            {
+                admin_logged_in = 0;
+                *running = 0;
+            }
+            break;
+        }
+    }
 }
 
 int main()
