@@ -1120,15 +1120,17 @@ void PrintadminSummaryDashboard(int selected_cats[], int cat_count, double thres
 
 
 
-void PrintDashBoard(int user_index)
-{
-    CalculateTax(user_index); // Ensure tax calculations are up-to-date
+void PrintDashBoard(int user_index) {
+    CalculateTax(user_index);
     ClearScreen();
     struct Citizen *citizen = &citizen_list[user_index];
+    int child_cat = citizen->deduction[0].category[1];
+    double child_deduction_amt = lookupChildAllowance(citizen->numberOfChildren, citizen->childrenUnder18, childTable, 4);
+
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("========================================= Tax Dashboard =========================================\n");
     printf("-------------------------------------------------------------------------------------------------\n");
-    printf("Hi, %s\n",citizen->citizenName);
+    printf("Hi, %s\n", citizen->citizenName);
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("Citizen ID: %s\n", citizen->citizenId);
     printf("Age: %d\n", citizen->age);
@@ -1141,9 +1143,9 @@ void PrintDashBoard(int user_index)
     printf("Annual Income: %82.2f\n", citizen->annualIncome);
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("Deduction Category Available:\n");
-    printf("[1] Marital Status Deduction: %s %63.2f\n", citizen->deduction[0].category[0] ? "Yes" : "No", citizen->martialStatus ? 9000.0 : 0.0);
-    printf("[2] Children Deduction (Deduction Category): %s %20.2f\n", childTablestring[citizen->deduction[0].category[1]], childTable[citizen->deduction[0].category[1]].amount);
-    printf("[3] Special Healthcare Deduction: %s %59.2f\n", citizen->deduction[0].category[2] ? "Yes" : "No", citizen->specialHealthcare ? 5000.0 : 0.0);
+    printf("[1] Marital Status Deduction: %-5s %61.2f\n",citizen->martialStatus ? "Yes" : "No",citizen->martialStatus ? 5000.0 : 0.0);
+    printf("[2] Children Deduction: %-42s %30.2f\n",childTablestring[child_cat],child_deduction_amt);
+    printf("[3] Special Healthcare Deduction: %-5s %57.2f\n",citizen->specialHealthcare ? "Yes" : "No",citizen->specialHealthcare ? 20000.0 : 0.0);
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("Total Deduction: %80.2f\n", citizen->totalDeduction);
     printf("-------------------------------------------------------------------------------------------------\n");
@@ -1153,7 +1155,7 @@ void PrintDashBoard(int user_index)
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("Income Tax: %85.2f\n", citizen->incomeTax);
     printf("-------------------------------------------------------------------------------------------------\n");
-    printf("Tax Per Month: %82.2f\n", citizen->incomeTax / 12);
+    printf("Tax Per Month: %82.2f\n", citizen->incomeTax / 12.0);
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("Press Any key to Return");
     getch();
