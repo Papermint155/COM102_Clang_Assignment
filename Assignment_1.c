@@ -1053,24 +1053,6 @@ void SearchInfobyCategory(int category_choice, char *search_term) {
 }
 
 
-char adminSummaryDashboardChoice[15][60] = {
-    "Total Number of Registered Citizens",
-    "Total Number of Citizens with Special Healthcare Needs",
-    "Total Number of Married Citizens",
-    "Total Number of Single Citizens",
-    "Total Number of Citizens with Annual Income above a Certain Threshold",
-    "Average Annual Income of All Citizens",
-    "Average Taxable Income of All Citizens",
-    "Total Income Tax Collected from All Citizens",
-    "Total Exemptions/Deductions Claimed by All Citizens",
-    "Total Number of Citizens with Children",
-    "Total Number of Citizens with Children Under 18",
-    "Mean income tax per citizen",
-    "Median income tax per citizen",
-    "Standard deviation of income tax per citizen",
-    "Back to Main Menu"
-
-};
 void adminSummaryDashboard()
 {
 // ask print dashboard after showing the summary of all citizens
