@@ -77,13 +77,6 @@ struct ChildAllowance {
     double amount;
 };
 
-struct ChildCategory {
-    char category[25];
-    int minChildren;
-    int maxChildren;
-    double amount;
-};
-
 // Initialize the lookup table based on the assignment sheet
 struct ChildAllowance childTable[4] = {
     {"Child allowance A", 1, 2, 8000.0},
@@ -92,7 +85,8 @@ struct ChildAllowance childTable[4] = {
     {"Child allowance D", 7, 99, 14000.0}
 };
 
-char childTablestring[4][50] = {
+char childTablestring[5][50] = {
+    "No Child Allowance (Not Eligible)",
     "Child allowance A: 1-2 children",
     "Child allowance B: 3-4 children",
     "Child allowance C: 5-6 children",
@@ -123,8 +117,7 @@ struct Citizen
     struct Deduction_Category deduction[1];
 };
 
-struct TaxBracket
-{
+struct TaxBracket{
     double minIncome;
     double maxIncome;
     double taxRate;
@@ -139,7 +132,11 @@ struct TaxBracket brackets[7] = {
     {500000.0, 1000000.0, 0.19},
     {1000000.0, 1.7976931348623157E+308, 0.25}};
 
-struct Citizen citizen_list[30];
+struct Citizen citizen_list[MAX_CITIZENS];
+
+void CalculateTax(int user_index);
+void PrintadminSummaryDashboard(int selected_cats[], int cat_count, double threshold);
+void PrintCustomCitizenTableToFile(struct Citizen list[], int count, int dashboard_ntb_print[], int counter);
 
 void RemoveNewLine(char *str)
 {
@@ -968,9 +965,23 @@ Selected Cat 2
 etc
 */
 
-void PrintadminSummaryDashboard(int category_choice)
-{
-    
+void PrintadminSummaryDashboard(int selected_cats[], int cat_count, double threshold) {
+    FILE *fp = fopen("Citizen_Tax_report.txt", "w");
+    if (fp == NULL) {
+        printf("[!] Error: Could not open 'Citizen_Tax_report.txt' for writing.\n");
+        return;
+    }
+
+    fprintf(fp, "-------------------------------------------------------------------------------------------\n");
+    fprintf(fp, "------------------------ Summary of All Citizens Dashboard --------------------------------\n");
+    fprintf(fp, "-------------------------------------------------------------------------------------------\n");
+    for (int i = 0; i < cat_count; i++) {
+        WriteSingleSummaryStat(fp, selected_cats[i], threshold);
+        fprintf(fp, "-------------------------------------------------------------------------------------------\n");
+    }
+
+    fclose(fp);
+    printf("\n[+] Summary Dashboard successfully printed to 'Citizen_Tax_report.txt'!\n");
 }
 
 
