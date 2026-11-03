@@ -1053,9 +1053,37 @@ void SearchInfobyCategory(int category_choice, char *search_term) {
 }
 
 
-void adminSummaryDashboard()
-{
-// ask print dashboard after showing the summary of all citizens
+void adminSummaryDashboard(){
+    if (registered_user == 0) {
+        ClearScreen();
+        printf("[!] No citizens registered yet.\nPress any key to return...");
+        getch();
+        return;
+    }
+
+    int selected_cats[15];
+    int cat_count = 0;
+    double threshold = 50000.0;
+
+    if (!SelectSummaryDashboardCategories(selected_cats, &cat_count, &threshold)) {
+        return;
+    }
+
+    ClearScreen();
+    printf("-------------------------------------------------------------------------------------------\n");
+    printf("------------------------ Summary of All Citizens Dashboard --------------------------------\n");
+    printf("-------------------------------------------------------------------------------------------\n");
+    for (int i = 0; i < cat_count; i++) {
+        WriteSingleSummaryStat(stdout, selected_cats[i], threshold);
+        printf("-------------------------------------------------------------------------------------------\n");
+    }
+
+    // Ask print dashboard after showing the summary of all citizens
+    if (ConfirmAction("Do you want to print this Summary Dashboard to 'Citizen_Tax_report.txt'?")) {
+        PrintadminSummaryDashboard(selected_cats, cat_count, threshold);
+    }
+    printf("Press any key to return...");
+    getch();
     
 }
 /* draft od summard board 
