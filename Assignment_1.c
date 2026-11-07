@@ -47,11 +47,12 @@ char dash_menu[7][40] = {
 };
 
 // menu for admin 
-char admin_menu[8][40] = {
+char admin_menu[9][40] = {
     "View All Citizens",
     "Search Citizen Info",
     "Add Citizen",
     "Edit Citizen Info",
+    "Watch Citizen Personal Report",
     "Overall Statistics",
     "Print Overall Statistics",
     "Logout",
@@ -684,7 +685,7 @@ void GetCitizenInfo(int user_index) { // get the basic info of the citizen
         ClearScreen();
         printf("Enter Number of Children Under 18 (0 - %d): ", citizen->numberOfChildren);
         if (scanf("%d", &citizen->childrenUnder18) == 1 && // same check / data 
-            citizen->childrenUnder18 >= 0 && // is itpostive value and less than the number of kid 
+            citizen->childrenUnder18 >= 0 && // is it postive value and less than the number of kid 
             citizen->childrenUnder18 <= citizen->numberOfChildren) {
             ClearInputBuffer();
             if (ConfirmAction("Confirm Number of Children Under 18?")) { // confirmation 
@@ -1616,6 +1617,45 @@ void AdminAddCitizen() { // this is the same logic as the register user but this
     getch();
 }
 
+void AdminWatchCitizenPersonalReport() { // function for admin to view individual dashboard
+    ClearScreen();
+    char target_id[30];
+    
+    printf("--- Watch Citizen Personal Report ---\n");
+    printf("Enter Citizen ID to view: ");
+    fgets(target_id, sizeof(target_id), stdin);
+    RemoveNewLine(target_id);
+    
+    int found_idx = -1;
+    for (int i = 0; i < registered_user; i++) { // search through array for matching ID
+        if (strcmp(citizen_list[i].citizenId, target_id) == 0) {
+            found_idx = i;
+            break;
+        }
+    }
+    
+    if (found_idx == -1) { // if ID not found, print error prompt
+        printf("[!] Citizen ID '%s' not found.\nPress any key to return...", target_id);
+        getch();
+        return;
+    }
+    
+    if (ConfirmAction("Confirm viewing this Citizen's Personal Report?")) { // confirmation 
+        // 1. Show the dashboard on screen (this function already has a getch() pause at the end)
+        PrintDashBoard(found_idx); 
+        
+        // 2. Ask if admin wants to print it to a text file
+        ClearScreen();
+        if (ConfirmAction("Do you want to print this dashboard to a text file?")) {
+            PrintCitizenInfo(found_idx); // reuse the existing export function
+            printf("\n[+] Citizen personal report saved to 'Citizen_%s_Info.txt' successfully.\n", citizen_list[found_idx].citizenId);
+        }
+        printf("Press any key to return...");
+        getch();
+    }
+}
+
+
 void AdminMenu(int *running) {
     int admin_logged_in = 1;
     while (admin_logged_in) {
@@ -1661,10 +1701,13 @@ void AdminMenu(int *running) {
             }
             break;
         }
-        case 4: // Overall Statistics (Choose Summary Categories -> Show -> Ask to Print)
+        case 4:
+            AdminWatchCitizenPersonalReport();
+            break;
+        case 5: // Overall Statistics (Choose Summary Categories -> Show -> Ask to Print)
             adminSummaryDashboard();
             break;
-        case 5: { // Print Overall Statistics (Choose Summary Categories or Table Categories to Print)
+        case 6: { // Print Overall Statistics (Choose Summary Categories or Table Categories to Print)
             int selected_cats[15];
             int cat_count = 0;
             double threshold = 50000.0;
@@ -1676,14 +1719,14 @@ void AdminMenu(int *running) {
             }
             break;
         }
-        case 6: // Logout
+        case 7: // Logout
             ClearScreen();
             if (ConfirmAction("Logout ?")){ // important desision dulbel confirm 
                 admin_logged_in = 0;
             }
 
             break;
-        case 7: // Exit
+        case 8: // Exit
             ClearScreen();
             if (ConfirmAction("Exit ?")) // important desision dulbel confirm 
             {
@@ -1694,6 +1737,8 @@ void AdminMenu(int *running) {
         }
     }
 }
+
+
 
 int main() { // the main 
     LoadUserData();
