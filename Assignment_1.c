@@ -412,8 +412,8 @@ void UpdateChildCategoryIndex(struct Citizen *citizen) { // this is to determine
 
 
 void SaveUserData(){
-    //FILE *file_path = fopen("userdata.bin", "wb"); // 'wb' = write binary
-     FILE *file_path = fopen("userdata.txt", "w"); // 'wb' = write binary
+    FILE *file_path = fopen("userdata.bin", "wb"); // 'wb' = write binary
+    //FILE *file_path = fopen("userdata.txt", "w"); // 'wb' = write binary
     if (file_path == NULL)
     {                                       // check weather it is no file
         printf("[!] Error saving data!\n"); // if cant save , print error data
@@ -428,8 +428,8 @@ void SaveUserData(){
 
 void LoadUserData()
 {
-    //FILE *file_path = fopen("userdata.bin", "rb"); // 'rb' = read binary , if this can be use in the securuty
-     FILE *file_path = fopen("userdata.txt", "r"); // use txt file for visualise the data in it
+    FILE *file_path = fopen("userdata.bin", "rb"); // 'rb' = read binary , if this can be use in the securuty
+    //FILE *file_path = fopen("userdata.txt", "r"); // use txt file for visualise the data in it
     if (file_path == NULL)
     {           // check weather it is no file
         return; // No file yet, just return without value to exit the funtion
@@ -549,32 +549,6 @@ void RegisterUser() { // use to register user
         break;
     }
 
-
-    // Get Password
-    while(1)
-    {
-        printf("Password (Max 20): "); 
-        fgets(temp_input, sizeof(temp_input), stdin);
-
-        if (strchr(temp_input, '\n') == NULL) //check is it got cut off
-        {
-            printf("[!] Error: Password too long!\n");
-            ClearInputBuffer();
-            getch();
-            continue;
-        }
-
-        RemoveNewLine(temp_input);
-        if (strlen(temp_input) >= 20 || CheckInputBlank(temp_input)) // double check agian 
-        {
-            printf("[!] Error: Password must be 1-19 characters.\n");
-            ClearInputBuffer();
-            getch();
-            continue;
-        }
-        strcpy(new_citizen->citizenPassword, temp_input); // then direct cpy to struct 
-        break;
-    }
 
     registered_user++; // add the count of register counter 
     new_citizen->LoginCount = 0; // set the login count to o0 as need to intialize their info for first  log in 
