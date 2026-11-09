@@ -194,7 +194,7 @@ void ClearInputBuffer()
 void ClearScreen()
 {
     system("cls");
-    // clrscr(); cant use (got bug)
+    // clrscr(); cant u se (got bug)
     //  printf("\033[H\033[2J"); This method not working (By printing a lot of new line)
     //  fflush(stdout);(Ciallo～(∠・ω< )⌒★)
 }
@@ -211,7 +211,7 @@ int ConfirmAction(const char *prompt) { // send the pointer to the message in he
             return 0;
         }
     }
-}
+}//mark 
 
 int CheckInputBlank(char *str)
 { // debug at here, forgot it will return int
@@ -233,7 +233,7 @@ double CheckValidDouble(char *message)
     while (1)
     {
         printf("%s", message);
-        if (scanf("%lf", &value) == 1 && value > 0 && value < 2147483647)
+        if (scanf("%lf", &value) == 1 && value >= 0 && value < 2147483647)
         {
             ClearInputBuffer();
             return value;
@@ -244,7 +244,7 @@ double CheckValidDouble(char *message)
             ClearInputBuffer();
         }
     }
-    return value;
+    return value ;
 }
 
 int SelectOption(char option[][40], int total_choice)
@@ -520,7 +520,7 @@ void RegisterUser() { // use to register user
             continue;
         }
 
-        strcpy(new_citizen->citizenName, temp_input); // cpy the input to struct 
+        ; // cpy the input to struct 
         break;
     }
 //(Ciallo～(∠・ω< )⌒★)
@@ -611,7 +611,7 @@ int UserLogin() { //login function
         return -2; // Admin login only 
     }
 
-    if (registered_user == 0) { // ensure O(N) prevent search trought entire thing if there is no record 
+    if (registered_user == 0) { // ensure O(1) prevent search trought entire thing if there is no record 
         printf("No user found. Please register first!\nPress any key to return...");
         getch();
         return -1;
@@ -1071,7 +1071,7 @@ int CompareDoubles(const void *a, const void *b) { // compare the double
     return (da > db) - (da < db);
 }
 
-void WriteSingleSummaryStat(FILE *stream, int stat_index, double threshold) { // calculate the summary state 
+void WriteSingleSummaryStat(FILE *stream, int stat_index, double threshold) { // calculate the summary state  
     int special_hc_count = 0, married_count = 0, single_count = 0; // declare all variable used 
     int with_children = 0, with_children_u18 = 0, above_threshold = 0;
     double total_annual_income = 0.0, total_taxable_income = 0.0;
@@ -1269,7 +1269,7 @@ void SearchInfobyCategory(int category_choice, char *search_term) { // search fu
                 match = 1;
             break;
         case 7: // Children Under 18
-            if (atoi(search_term) == citizen->childrenUnder18)
+            if (atoi(search_term) == citizen->childrenUnder18) //ascii to int
                 match = 1;
             break;
         case 8: // Special Healthcare Status
@@ -1659,7 +1659,7 @@ void AdminWatchCitizenPersonalReport() { // function for admin to view individua
 void AdminMenu(int *running) {
     int admin_logged_in = 1;
     while (admin_logged_in) {
-        int choice = SelectOption(admin_menu, 8);
+        int choice = SelectOption(admin_menu, 9);
         switch (choice) {
         case 0: // View All Citizens (Choose Categories + Print Option)
             ViewAllCitizens();
