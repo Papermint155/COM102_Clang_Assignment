@@ -520,7 +520,7 @@ void RegisterUser() { // use to register user
             continue;
         }
 
-        ; // cpy the input to struct 
+        strcpy(new_citizen->citizenName, temp_input); // cpy the input to struct
         break;
     }
 //(Ciallo～(∠・ω< )⌒★)
@@ -649,11 +649,13 @@ void GetCitizenInfo(int user_index) { // get the basic info of the citizen
     while (1) {
         ClearScreen();
         printf("Enter Marital Status (0 for Single, 1 for Married): ");
-        if (scanf("%d", &citizen->martialStatus) == 1 // check correct data type or not or 
-        && (citizen->martialStatus == 0 || citizen->martialStatus == 1)) { // check which user enter 
+        int input_value; // read into int first, bool is only 1 byte so %d cannot write into it safely
+        if (scanf("%d", &input_value) == 1 // check correct data type or not
+        && (input_value == 0 || input_value == 1)) { // only accept 0 or 1
             ClearInputBuffer();
-            if (ConfirmAction("Confirm Marital Status?")) { // corfirmation 
-                citizen->deduction[0].category[0] = citizen->martialStatus; // write in struct 
+            if (ConfirmAction("Confirm Marital Status?")) { // corfirmation
+                citizen->martialStatus = input_value; // only save to struct after it is checked
+                citizen->deduction[0].category[0] = citizen->martialStatus; // write in struct
                 break;
             }
         } else {
@@ -702,11 +704,13 @@ void GetCitizenInfo(int user_index) { // get the basic info of the citizen
     while (1) {
         ClearScreen();
         printf("Special Healthcare Status (0 for No, 1 for Yes): ");
-        if (scanf("%d", &citizen->specialHealthcare) == 1 && // smae / data tyoes 
-            (citizen->specialHealthcare == 0 || citizen->specialHealthcare == 1)) { //check it is 0 or 1 only 
+        int input_value; // read into int first, same reason as marital status
+        if (scanf("%d", &input_value) == 1 && // same / data types
+            (input_value == 0 || input_value == 1)) { //check it is 0 or 1 only
             ClearInputBuffer();
             if (ConfirmAction("Confirm Special Healthcare Status?")) {
-                citizen->deduction[0].category[2] = citizen->specialHealthcare; // put into the struct 
+                citizen->specialHealthcare = input_value; // only save to struct after it is checked
+                citizen->deduction[0].category[2] = citizen->specialHealthcare; // put into the struct
                 break;
             }
         } else {
@@ -745,10 +749,12 @@ void EditCitizenInfo(int user_index, int field_choice) { //edit the user info
         while (1) {
             ClearScreen();
             printf("Enter New Marital Status (0 for Single, 1 for Married): ");
-            if (scanf("%d", &citizen->martialStatus) == 1 &&
-                (citizen->martialStatus == 0 || citizen->martialStatus == 1)) {
+            int input_value; // read into int first, bool is only 1 byte
+            if (scanf("%d", &input_value) == 1 &&
+                (input_value == 0 || input_value == 1)) {
                 ClearInputBuffer();
                 if (ConfirmAction("Confirm New Marital Status?")) {
+                    citizen->martialStatus = input_value; // only save after it is checked
                     citizen->deduction[0].category[0] = citizen->martialStatus;
                     break;
                 }
@@ -807,10 +813,12 @@ void EditCitizenInfo(int user_index, int field_choice) { //edit the user info
         while (1) {
             ClearScreen();
             printf("Special Healthcare Status (0 for No, 1 for Yes): ");
-            if (scanf("%d", &citizen->specialHealthcare) == 1 &&
-                (citizen->specialHealthcare == 0 || citizen->specialHealthcare == 1)) {
+            int input_value; // read into int first, bool is only 1 byte
+            if (scanf("%d", &input_value) == 1 &&
+                (input_value == 0 || input_value == 1)) {
                 ClearInputBuffer();
                 if (ConfirmAction("Confirm Special Healthcare Status?")) {
+                    citizen->specialHealthcare = input_value; // only save after it is checked
                     citizen->deduction[0].category[2] = citizen->specialHealthcare;
                     break;
                 }
