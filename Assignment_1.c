@@ -6,14 +6,12 @@
 
 // Dont use Abbreviation, unless it is common
 // Descripe as detail as possible */
-
+//Ciallo～ (∠・ω< )⌒★
 #include <stdio.h>
 #include <stdlib.h> // fixed system cls,  atoi, atof and qsort
 #include <string.h>
 #include <math.h>  // for isnan() function
 #include <conio.h> // getch() function
-#include <stdbool.h>
-#include <ctype.h>
 
 #define MAX_CITIZENS 30 //max user
 
@@ -84,7 +82,7 @@ char sort_order_menu[2][40] = {
 
 
 //menu for admin to do the summary
-char adminSummaryDashboardChoice[17][60] = {
+char adminSummaryDashboardChoice[19][60] = {
     "Done / Show Selected Summary Dashboard",
     "Total Number of Registered Citizens",
     "Total Number of Citizens with Special Healthcare Needs",
@@ -100,10 +98,12 @@ char adminSummaryDashboardChoice[17][60] = {
     "Mean income tax per citizen",
     "Median income tax per citizen",
     "Standard deviation of income tax per citizen",
+    "Total Annual Income of All Citizens",
+    "Total Taxable Income of All Citizens",
     "All Summary Categories (Default)",
     "Back to Admin Menu"
 };
-
+//Ciallo～ (∠・ω< )⌒★
 struct ChildAllowance {
     char category[25];
     int minChildren;
@@ -128,7 +128,19 @@ char childTablestring[5][50] = {
     "Child allowance D: 7 or more children"
 };
 
-//declaration of the Deduction Category
+//Structure of the Deduction (save the fixed deduction amount, child allowance is in childTable)
+struct Deduction {
+    char category[25];
+    double amount;
+};
+
+//Table data for the Deduction
+struct Deduction deductionTable[2] = {
+    {"Marital allowance", 5000.0},   // [0] married citizen
+    {"Special healthcare", 20000.0}  // [1] spouse or at least one child need special healthcare
+};
+
+//declaration of the Deduction Category (which deduction the citizen get)
 struct Deduction_Category{
     int category[3];
     double deductionAmount;
@@ -136,12 +148,12 @@ struct Deduction_Category{
 
 //Structure of the citizen
 struct Citizen{
-    char citizenId[13];
+    char citizenID[13];
     char citizenName[50];
     char citizenPassword[20];
     int LoginCount;
     int age;
-    bool martialStatus;
+    bool maritalStatus;
     double annualIncome;
     int numberOfChildren;
     int childrenUnder18;
@@ -159,7 +171,7 @@ struct TaxBracket{
     double taxRate;
 };
 
-//Initalize data in the Tax Bracket  (Ciallo～(∠・ω< )⌒★)
+//Initalize data in the Tax Bracket
 
 struct TaxBracket brackets[7] = {
     {0.0, 48000.0, 0.00},
@@ -196,7 +208,7 @@ void ClearScreen()
     system("cls");
     // clrscr(); cant u se (got bug)
     //  printf("\033[H\033[2J"); This method not working (By printing a lot of new line)
-    //  fflush(stdout);(Ciallo～(∠・ω< )⌒★)
+    //  fflush(stdout);
 }
 
 int ConfirmAction(const char *prompt) { // send the pointer to the message in here 
@@ -248,9 +260,8 @@ double CheckValidDouble(char *message)
 }
 
 int SelectOption(char option[][40], int total_choice)
-{ // havent conplete yet
+{ // havent conplete yet //Ciallo～ (∠・ω< )⌒★
     int current_selection = 0;
-    int input;
     while (1)
     {
         ClearScreen();
@@ -359,11 +370,10 @@ void SelectCitizenDashboardCategories(int dashboard_ntb_print[], int *counter) {
         }
     }
 }
-//(Ciallo～(∠・ω< )⌒★)
 
 int CheckIdUniqueness(char *id) { // check uquinees in id
     for (int i = 0; i < registered_user; i++) {
-        if (strcmp(citizen_list[i].citizenId, id) == 0) { // cmp one b 1 to check is have the same?
+        if (strcmp(citizen_list[i].citizenID, id) == 0) { // cmp one b 1 to check is have the same?
             return 0; // ID is not unique
         }
     }
@@ -400,7 +410,7 @@ double lookupChildAllowance(int totalChildren, int under18, struct ChildAllowanc
 void UpdateChildCategoryIndex(struct Citizen *citizen) { // this is to determine the allowance for child
     if (citizen->numberOfChildren <= 0 || citizen->numberOfChildren != citizen->childrenUnder18) { // error handling again as comfrim -tive categorize as none allowance 
         citizen->deduction[0].category[1] = 0;
-    } else if (citizen->childrenUnder18 <= 2) {
+    } else if (citizen->childrenUnder18 <= 2) {//Ciallo～ (∠・ω< )⌒★
         citizen->deduction[0].category[1] = 1;
     } else if (citizen->childrenUnder18 <= 4) {
         citizen->deduction[0].category[1] = 2;
@@ -489,7 +499,7 @@ void RegisterUser() { // use to register user
             continue;
         }
 
-        strcpy(new_citizen->citizenId, temp_input); // after all just cpy the temp value to the struct 
+        strcpy(new_citizen->citizenID, temp_input); // after all just cpy the temp value to the struct 
         break;
     }
 
@@ -523,7 +533,6 @@ void RegisterUser() { // use to register user
         strcpy(new_citizen->citizenName, temp_input); // cpy the input to struct
         break;
     }
-//(Ciallo～(∠・ω< )⌒★)
     while (1) {
         printf("Password (Max 19 characters): ");
         fgets(temp_input, sizeof(temp_input), stdin);
@@ -554,7 +563,7 @@ void RegisterUser() { // use to register user
     registered_user++; // add the count of register counter 
     new_citizen->LoginCount = 0; // set the login count to o0 as need to intialize their info for first  log in 
     SaveUserData();
-    printf("\nNew User Registration Success! \nPress any key to continue...");
+    printf("\nNew User Registration Success! \nPress any key to continue...");//Ciallo～ (∠・ω< )⌒★
     getch(); // wait till the user want to proceed ;
 }
 
@@ -598,7 +607,6 @@ int UserLogin() { //login function
             getch();
             continue;
         }
-//(Ciallo～(∠・ω< )⌒★)
         RemoveNewLine(input_password);
         if (strlen(input_password) >= 20 || CheckInputBlank(input_password)) {
             printf("[!] Error: Password must be 1-19 characters.\n"); //double check the format 
@@ -618,7 +626,7 @@ int UserLogin() { //login function
     }
 
     for (int i = 0; i < registered_user; i++) {
-        if (strcmp(input_ID, citizen_list[i].citizenId) == 0 &&
+        if (strcmp(input_ID, citizen_list[i].citizenID) == 0 &&
             strcmp(input_password, citizen_list[i].citizenPassword) == 0) { //loop trough the list to compare the password and the id ans retrun index of that user 
             citizen_list[i].LoginCount++;
             return i;
@@ -649,13 +657,11 @@ void GetCitizenInfo(int user_index) { // get the basic info of the citizen
     while (1) {
         ClearScreen();
         printf("Enter Marital Status (0 for Single, 1 for Married): ");
-        int input_value; // read into int first, bool is only 1 byte so %d cannot write into it safely
-        if (scanf("%d", &input_value) == 1 // check correct data type or not
-        && (input_value == 0 || input_value == 1)) { // only accept 0 or 1
+        if (scanf("%d", &citizen->maritalStatus) == 1 // check correct data type or not or 
+        && (citizen->maritalStatus == 0 || citizen->maritalStatus == 1)) { // check which user enter 
             ClearInputBuffer();
-            if (ConfirmAction("Confirm Marital Status?")) { // corfirmation
-                citizen->martialStatus = input_value; // only save to struct after it is checked
-                citizen->deduction[0].category[0] = citizen->martialStatus; // write in struct
+            if (ConfirmAction("Confirm Marital Status?")) { // corfirmation 
+                citizen->deduction[0].category[0] = citizen->maritalStatus; // write in struct 
                 break;
             }
         } else {
@@ -665,7 +671,7 @@ void GetCitizenInfo(int user_index) { // get the basic info of the citizen
         }
     }
 
-    ClearScreen();
+    ClearScreen();//Ciallo～ (∠・ω< )⌒★
     citizen->annualIncome = CheckValidDouble("Enter Annual Income: RM "); // get the Annual income and also check the data valid
 
     while (1) {
@@ -682,7 +688,6 @@ void GetCitizenInfo(int user_index) { // get the basic info of the citizen
             getch();
         }
     }
-//(Ciallo～(∠・ω< )⌒★)
     while (1) {
         ClearScreen();
         printf("Enter Number of Children Under 18 (0 - %d): ", citizen->numberOfChildren);
@@ -704,13 +709,16 @@ void GetCitizenInfo(int user_index) { // get the basic info of the citizen
     while (1) {
         ClearScreen();
         printf("Special Healthcare Status (0 for No, 1 for Yes): ");
-        int input_value; // read into int first, same reason as marital status
-        if (scanf("%d", &input_value) == 1 && // same / data types
-            (input_value == 0 || input_value == 1)) { //check it is 0 or 1 only
+        if (scanf("%d", &citizen->specialHealthcare) == 1 && // smae / data tyoes 
+            (citizen->specialHealthcare == 0 || citizen->specialHealthcare == 1)) { //check it is 0 or 1 only
             ClearInputBuffer();
+            if (citizen->specialHealthcare == 1 && citizen->maritalStatus == 0 && citizen->numberOfChildren == 0) { // only spouse or child can need special healthcare
+                printf("[!] Error: Special healthcare is only for spouse or child. Single citizen with no child cannot claim it.\n");
+                getch();
+                continue;
+            }
             if (ConfirmAction("Confirm Special Healthcare Status?")) {
-                citizen->specialHealthcare = input_value; // only save to struct after it is checked
-                citizen->deduction[0].category[2] = citizen->specialHealthcare; // put into the struct
+                citizen->deduction[0].category[2] = citizen->specialHealthcare; // put into the struct 
                 break;
             }
         } else {
@@ -745,17 +753,15 @@ void EditCitizenInfo(int user_index, int field_choice) { //edit the user info
             }
         }
         break;
-    case 2: // edit martial stat
+    case 2: // edit marital stat
         while (1) {
             ClearScreen();
-            printf("Enter New Marital Status (0 for Single, 1 for Married): ");
-            int input_value; // read into int first, bool is only 1 byte
-            if (scanf("%d", &input_value) == 1 &&
-                (input_value == 0 || input_value == 1)) {
+            printf("Enter New Marital Status (0 for Single, 1 for Married): ");//Ciallo～ (∠・ω< )⌒★
+            if (scanf("%d", &citizen->maritalStatus) == 1 &&
+                (citizen->maritalStatus == 0 || citizen->maritalStatus == 1)) {
                 ClearInputBuffer();
                 if (ConfirmAction("Confirm New Marital Status?")) {
-                    citizen->martialStatus = input_value; // only save after it is checked
-                    citizen->deduction[0].category[0] = citizen->martialStatus;
+                    citizen->deduction[0].category[0] = citizen->maritalStatus;
                     break;
                 }
             } else {
@@ -765,7 +771,7 @@ void EditCitizenInfo(int user_index, int field_choice) { //edit the user info
             }
         }
         break;
-    case 3: // edit income (Ciallo～(∠・ω< )⌒★)
+    case 3: // edit income
         ClearScreen();
         citizen->annualIncome = CheckValidDouble("Enter New Annual Income: RM ");
         break;
@@ -813,12 +819,15 @@ void EditCitizenInfo(int user_index, int field_choice) { //edit the user info
         while (1) {
             ClearScreen();
             printf("Special Healthcare Status (0 for No, 1 for Yes): ");
-            int input_value; // read into int first, bool is only 1 byte
-            if (scanf("%d", &input_value) == 1 &&
-                (input_value == 0 || input_value == 1)) {
+            if (scanf("%d", &citizen->specialHealthcare) == 1 &&
+                (citizen->specialHealthcare == 0 || citizen->specialHealthcare == 1)) {
                 ClearInputBuffer();
+                if (citizen->specialHealthcare == 1 && citizen->maritalStatus == 0 && citizen->numberOfChildren == 0) { // only spouse or child can need special healthcare
+                    printf("[!] Error: Special healthcare is only for spouse or child. Single citizen with no child cannot claim it.\n");
+                    getch();
+                    continue;
+                }
                 if (ConfirmAction("Confirm Special Healthcare Status?")) {
-                    citizen->specialHealthcare = input_value; // only save after it is checked
                     citizen->deduction[0].category[2] = citizen->specialHealthcare;
                     break;
                 }
@@ -842,14 +851,17 @@ void CalculateTax(int user_index) { //calc tax function```17-6
     struct Citizen *citizen = &citizen_list[user_index];
     citizen->totalDeduction = 0.0; // intialize the value 
 
-    if (citizen->martialStatus) { // married  
-        citizen->totalDeduction += 5000.0;
+    if (citizen->maritalStatus) { // married
+        citizen->totalDeduction += deductionTable[0].amount; // marital allowance
     }
-    if (citizen->numberOfChildren > 0) { // have child 
-        citizen->totalDeduction += lookupChildAllowance(citizen->numberOfChildren, citizen->childrenUnder18, childTable, 4); // check the vlaue in the table 
+    if (citizen->numberOfChildren > 0) { // have child
+        citizen->totalDeduction += lookupChildAllowance(citizen->numberOfChildren, citizen->childrenUnder18, childTable, 4); // check the vlaue in the table
     }
-    if (citizen->specialHealthcare) { // got healthcare 
-        citizen->totalDeduction += 20000.0;
+    if (citizen->specialHealthcare && (citizen->maritalStatus || citizen->numberOfChildren > 0)) { // got healthcare AND have spouse or child
+        citizen->totalDeduction += deductionTable[1].amount; // special healthcare allowance
+    } else {
+        citizen->specialHealthcare = 0; // single with no child cannot claim, so reset to No
+        citizen->deduction[0].category[2] = 0;
     }
 
     UpdateChildCategoryIndex(citizen); // see whicj cate gory the user belong to 
@@ -870,7 +882,7 @@ void SortCitizens(struct Citizen list[], int count, int sortbycategory, int sort
             int cmp = 0;
             switch (sortbycategory) {
             case 1: // sort by id _stricmp()
-                cmp = _stricmp(list[j].citizenId, list[j + 1].citizenId);
+                cmp = _stricmp(list[j].citizenID, list[j + 1].citizenID);
                 break;
             case 2: // sort by Name
                 cmp = _stricmp(list[j].citizenName, list[j + 1].citizenName);
@@ -878,8 +890,8 @@ void SortCitizens(struct Citizen list[], int count, int sortbycategory, int sort
             case 3: // by age
                 cmp = (list[j].age > list[j + 1].age) - (list[j].age < list[j + 1].age);
                 break;
-            case 4: // bt martial stat 
-                cmp = (list[j].martialStatus > list[j + 1].martialStatus) - (list[j].martialStatus < list[j + 1].martialStatus);
+            case 4: // bt marital stat 
+                cmp = (list[j].maritalStatus > list[j + 1].maritalStatus) - (list[j].maritalStatus < list[j + 1].maritalStatus);
                 break;
             case 5: // by annual income
                 cmp = (list[j].annualIncome > list[j + 1].annualIncome) - (list[j].annualIncome < list[j + 1].annualIncome);
@@ -916,8 +928,23 @@ void SortCitizens(struct Citizen list[], int count, int sortbycategory, int sort
     }
 }
 
+void WriteGrandTotal(FILE *stream, struct Citizen list[], int count) { // print the grand total under the table (stdout = screen, fp = file)
+    double total_income = 0.0, total_deduction = 0.0, total_taxable = 0.0, total_tax = 0.0;
+    for (int i = 0; i < count; i++) { // add up the amount of every citizen in the table
+        total_income += list[i].annualIncome;
+        total_deduction += list[i].totalDeduction;
+        total_taxable += list[i].taxableIncome;
+        total_tax += list[i].incomeTax;
+    }
+    fprintf(stream, "GRAND TOTAL (%d Citizens)\n", count);
+    fprintf(stream, "Total Annual Income  : RM %.2f\n", total_income);
+    fprintf(stream, "Total Deduction      : RM %.2f\n", total_deduction);
+    fprintf(stream, "Total Taxable Income : RM %.2f\n", total_taxable);
+    fprintf(stream, "Total Income Tax     : RM %.2f\n", total_tax);
+}
+
 void PrintCustomCitizenTableToFile(struct Citizen list[], int count, int dashboard_ntb_print[], int counter) {
-    FILE *fp = fopen("Citizen_Tax_report.txt", "w");
+    FILE *fp = fopen("Citizen_Tax_report.txt", "a"); // "a" = append, so it will not erase the summary report already in the file
     if (fp == NULL) {
         printf("[!] Error: Unable to write to 'Citizen_Tax_report.txt'!\n");
         getch();
@@ -926,20 +953,19 @@ void PrintCustomCitizenTableToFile(struct Citizen list[], int count, int dashboa
 
     fprintf(fp, "============================================================================================================\n"); //ultimate header 
     fprintf(fp, "                                  CUSTOM CITIZEN TAX DASHBOARD REPORT                                       \n");
-    fprintf(fp, "============================================================================================================\n");
+    fprintf(fp, "============================================================================================================\n");//Ciallo～ (∠・ω< )⌒★
 
     for (int j = 0; j < counter; j++) {
         fprintf(fp, "%-18s | ", admin_category_Selection[dashboard_ntb_print[j]]); //print the category need to print for the header 
     }
     fprintf(fp, "\n------------------------------------------------------------------------------------------------------------\n");
-//(Ciallo～(∠・ω< )⌒★)
     for (int i = 0; i < count; i++) {
         struct Citizen *citizen = &list[i]; // check if the category is need o be print , if yes write to file 
         for (int j = 0; j < counter; j++) {
             int category = dashboard_ntb_print[j];
             switch (category) {
             case 1:
-                fprintf(fp, "%-18s | ", citizen->citizenId);
+                fprintf(fp, "%-18s | ", citizen->citizenID);
                 break;
             case 2:
                 fprintf(fp, "%-18.18s | ", citizen->citizenName);
@@ -948,7 +974,7 @@ void PrintCustomCitizenTableToFile(struct Citizen list[], int count, int dashboa
                 fprintf(fp, "%-18d | ", citizen->age);
                 break;
             case 4:
-                fprintf(fp, "%-18s | ", citizen->martialStatus ? "Married" : "Single");
+                fprintf(fp, "%-18s | ", citizen->maritalStatus ? "Married" : "Single");
                 break;
             case 5:
                 fprintf(fp, "RM %-15.2f | ", citizen->annualIncome);
@@ -975,9 +1001,11 @@ void PrintCustomCitizenTableToFile(struct Citizen list[], int count, int dashboa
         }
         fprintf(fp, "\n");
     }
-    fprintf(fp, "============================================================================================================\n"); //ending 
+    fprintf(fp, "------------------------------------------------------------------------------------------------------------\n");
+    WriteGrandTotal(fp, list, count); // grand total amount of the table
+    fprintf(fp, "============================================================================================================\n\n"); //ending
     fclose(fp);
-    printf("\n[+] Selected dashboard categories successfully printed to 'Citizen_Tax_report.txt'!\n"); // inform the user already been print 
+    printf("\n[+] Selected dashboard categories successfully added to 'Citizen_Tax_report.txt'!\n"); // inform the user already been print
 }
 
 void ShowAndPrintCitizenTable(struct Citizen matched_citizens[], int found) {
@@ -1011,7 +1039,7 @@ void ShowAndPrintCitizenTable(struct Citizen matched_citizens[], int found) {
     for (int j = 0; j < counter; j++) {
         printf("%-18s | ", admin_category_Selection[dashboard_ntb_print[j]]); //PRINT category needed 
     }
-    printf("\n------------------------------------------------------------------------------------------------------------\n");
+    printf("\n------------------------------------------------------------------------------------------------------------\n");//Ciallo～ (∠・ω< )⌒★
 
     for (int i = 0; i < found; i++) {
         struct Citizen *citizen = &matched_citizens[i]; // print the category needed
@@ -1019,7 +1047,7 @@ void ShowAndPrintCitizenTable(struct Citizen matched_citizens[], int found) {
             int category = dashboard_ntb_print[j];
             switch (category) {
             case 1:
-                printf("%-18s | ", citizen->citizenId);
+                printf("%-18s | ", citizen->citizenID);
                 break;
             case 2:
                 printf("%-18.18s | ", citizen->citizenName);
@@ -1028,7 +1056,7 @@ void ShowAndPrintCitizenTable(struct Citizen matched_citizens[], int found) {
                 printf("%-18d | ", citizen->age);
                 break;
             case 4:
-                printf("%-18s | ", citizen->martialStatus ? "Married" : "Single");
+                printf("%-18s | ", citizen->maritalStatus ? "Married" : "Single");
                 break;
             case 5:
                 printf("RM %-15.2f | ", citizen->annualIncome);
@@ -1056,6 +1084,8 @@ void ShowAndPrintCitizenTable(struct Citizen matched_citizens[], int found) {
         printf("\n");
     }
     printf("------------------------------------------------------------------------------------------------------------\n");
+    WriteGrandTotal(stdout, matched_citizens, found); // grand total amount of the table
+    printf("------------------------------------------------------------------------------------------------------------\n");//Ciallo～ (∠・ω< )⌒★
 
     // 4. Ask if admin wants to print these exact selected categories to file
     if (ConfirmAction("Do you want to print this custom dashboard to 'Citizen_Tax_report.txt'?")) {
@@ -1090,7 +1120,7 @@ void WriteSingleSummaryStat(FILE *stream, int stat_index, double threshold) { //
         CalculateTax(i); // clacualted tax for each user 
         if (citizen_list[i].specialHealthcare)
             special_hc_count++; //add yhe count of this stat 
-        if (citizen_list[i].martialStatus)
+        if (citizen_list[i].maritalStatus)
             married_count++; //same 
         else
             single_count++;
@@ -1159,7 +1189,7 @@ void WriteSingleSummaryStat(FILE *stream, int stat_index, double threshold) { //
         fprintf(stream, "%-62s : %d\n", adminSummaryDashboardChoice[10], with_children);
         break;
     case 11:
-        fprintf(stream, "%-62s : %d\n", adminSummaryDashboardChoice[11], with_children_u18);
+        fprintf(stream, "%-62s : %d\n", adminSummaryDashboardChoice[11], with_children_u18);//Ciallo～ (∠・ω< )⌒★
         break;
     case 12:
         fprintf(stream, "%-62s : RM %.2f\n", adminSummaryDashboardChoice[12], mean_tax);
@@ -1170,8 +1200,14 @@ void WriteSingleSummaryStat(FILE *stream, int stat_index, double threshold) { //
     case 14:
         fprintf(stream, "%-62s : RM %.2f\n", adminSummaryDashboardChoice[14], std_dev_tax);
         break;
+    case 15:
+        fprintf(stream, "%-62s : RM %.2f\n", adminSummaryDashboardChoice[15], total_annual_income);
+        break;
+    case 16:
+        fprintf(stream, "%-62s : RM %.2f\n", adminSummaryDashboardChoice[16], total_taxable_income);
+        break;
     }
-}//(Ciallo～(∠・ω< )⌒★)
+}
 
 
 int SelectSummaryDashboardCategories(int selected_cats[], int *cat_count, double *threshold) {
@@ -1179,15 +1215,15 @@ int SelectSummaryDashboardCategories(int selected_cats[], int *cat_count, double
     *threshold = 50000.0;
     int current_selection = 0;
 
-    while (*cat_count < 14) { // 14 category 
+    while (*cat_count < 16) { // 16 category
         ClearScreen();
         printf("Select Summary Categories to include in the Dashboard:\n");
-        printf("(Choose 'All Summary Categories (Default)' for all, or 'Done' when ready)\n"); // header 
+        printf("(Choose 'All Summary Categories (Default)' for all, or 'Done' when ready)\n"); // header
         printf("-------------------------------------------------------------------------------------------\n");
-        printf("Selected Count: %d / 14\n", *cat_count);
+        printf("Selected Count: %d / 16\n", *cat_count);
         printf("-------------------------------------------------------------------------------------------\n\n");
 
-        for (int i = 0; i < 17; i++) {
+        for (int i = 0; i < 19; i++) {
             if (i == current_selection) {
                 printf("-> %s\n", adminSummaryDashboardChoice[i]);
             } else {
@@ -1199,23 +1235,23 @@ int SelectSummaryDashboardCategories(int selected_cats[], int *cat_count, double
         if (key_pressed == 224 || key_pressed == 0) {
             key_pressed = getch();
             if (key_pressed == 72)
-                current_selection = (current_selection - 1 + 17) % 17;
+                current_selection = (current_selection - 1 + 19) % 19;
             if (key_pressed == 80)
-                current_selection = (current_selection + 1) % 17;
+                current_selection = (current_selection + 1) % 19;
         } else if (key_pressed == 13) {
-            if (current_selection == 16) { // Back to Admin Menu
+            if (current_selection == 18) { // Back to Admin Menu
                 return 0;
             } else if (current_selection == 0) { // Done / Show Selected
                 if (*cat_count == 0) {
-                    for (int c = 1; c <= 14; c++)
+                    for (int c = 1; c <= 16; c++)
                         selected_cats[c - 1] = c;
-                    *cat_count = 14;
+                    *cat_count = 16;
                 }
                 return 1;
-            } else if (current_selection == 15) { // All Summary Categories (Default)
-                for (int c = 1; c <= 14; c++)
+            } else if (current_selection == 17) { // All Summary Categories (Default)
+                for (int c = 1; c <= 16; c++)
                     selected_cats[c - 1] = c;
-                *cat_count = 14;
+                *cat_count = 16;
                 return 1;
             } else {
                 int exists = 0;
@@ -1237,7 +1273,6 @@ int SelectSummaryDashboardCategories(int selected_cats[], int *cat_count, double
         }
     }
     return 1;
-    //(Ciallo～(∠・ω< )⌒★)
 }
 
 void SearchInfobyCategory(int category_choice, char *search_term) { // search function by cate 
@@ -1252,7 +1287,7 @@ void SearchInfobyCategory(int category_choice, char *search_term) { // search fu
 
         switch (category_choice) { //search by 
         case 1: // ID
-            if (strstr(citizen->citizenId, search_term) != NULL)
+            if (strstr(citizen->citizenID, search_term) != NULL)
                 match = 1;
             break;
         case 2: // Name
@@ -1264,8 +1299,8 @@ void SearchInfobyCategory(int category_choice, char *search_term) { // search fu
                 match = 1;
             break;
         case 4: // Marital Status
-            if ((_stricmp(search_term, "Married") == 0 && citizen->martialStatus) ||
-                (_stricmp(search_term, "Single") == 0 && !citizen->martialStatus))
+            if ((_stricmp(search_term, "Married") == 0 && citizen->maritalStatus) ||
+                (_stricmp(search_term, "Single") == 0 && !citizen->maritalStatus))
                 match = 1;
             break;
         case 5: // Annual Income (>= search_term)
@@ -1327,7 +1362,7 @@ void adminSummaryDashboard(){ // the admin Dshboard
         return;
     }
 
-    int selected_cats[15]; // the array to selcet which the thing need to print 
+    int selected_cats[17]; // the array to selcet which the thing need to print
     int cat_count = 0; //the total cat the menu have 
     double threshold = 50000.0; // max income
 
@@ -1338,7 +1373,7 @@ void adminSummaryDashboard(){ // the admin Dshboard
     ClearScreen();
     printf("-------------------------------------------------------------------------------------------\n"); // header 
     printf("------------------------ Summary of All Citizens Dashboard --------------------------------\n");
-    printf("-------------------------------------------------------------------------------------------\n");
+    printf("-------------------------------------------------------------------------------------------\n");//Ciallo～ (∠・ω< )⌒★
     for (int i = 0; i < cat_count; i++) {
         WriteSingleSummaryStat(stdout, selected_cats[i], threshold); // print the summary one by one category 
         printf("-------------------------------------------------------------------------------------------\n");
@@ -1369,7 +1404,7 @@ etc
 
 
 void PrintadminSummaryDashboard(int selected_cats[], int cat_count, double threshold) {
-    FILE *fp = fopen("Citizen_Tax_report.txt", "w"); // open file the write 
+    FILE *fp = fopen("Citizen_Tax_report.txt", "a"); // "a" = append, so it will not erase the citizen table already in the file
     if (fp == NULL) {
         printf("[!] Error: Could not open 'Citizen_Tax_report.txt' for writing.\n");
         return;
@@ -1380,11 +1415,12 @@ void PrintadminSummaryDashboard(int selected_cats[], int cat_count, double thres
     fprintf(fp, "-------------------------------------------------------------------------------------------\n");
     for (int i = 0; i < cat_count; i++) {
         WriteSingleSummaryStat(fp, selected_cats[i], threshold);
-        fprintf(fp, "-------------------------------------------------------------------------------------------\n"); // loop the cat thhat nee to print 
+        fprintf(fp, "-------------------------------------------------------------------------------------------\n"); // loop the cat thhat nee to print
     }
+    fprintf(fp, "\n"); // empty line to separate from the next report
 
     fclose(fp);
-    printf("\n[+] Summary Dashboard successfully printed to 'Citizen_Tax_report.txt'!\n"); // told user hey have sucessfully save 
+    printf("\n[+] Summary Dashboard successfully added to 'Citizen_Tax_report.txt'!\n"); // told user hey have sucessfully save
 }
 
 
@@ -1400,12 +1436,12 @@ void PrintDashBoard(int user_index) { // this is foar dashboard for the user
 
     printf("-------------------------------------------------------------------------------------------------\n"); // print linde by line to have a buetiful interface 
     printf("========================================= Tax Dashboard =========================================\n");
-    printf("-------------------------------------------------------------------------------------------------\n");//(Ciallo～(∠・ω< )⌒★)
+    printf("-------------------------------------------------------------------------------------------------\n");
     printf("Hi, %s\n", citizen->citizenName);
     printf("-------------------------------------------------------------------------------------------------\n");
-    printf("Citizen ID: %s\n", citizen->citizenId);
+    printf("Citizen ID: %s\n", citizen->citizenID);
     printf("Age: %d\n", citizen->age);
-    printf("Marital Status: %s\n", citizen->martialStatus ? "Married" : "Single");
+    printf("Marital Status: %s\n", citizen->maritalStatus ? "Married" : "Single");
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("Number of Children: %d\n", citizen->numberOfChildren);
     printf("Number of Children Under 18: %d\n", citizen->childrenUnder18);
@@ -1414,9 +1450,9 @@ void PrintDashBoard(int user_index) { // this is foar dashboard for the user
     printf("Annual Income: %82.2f\n", citizen->annualIncome);
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("Deduction Category Available:\n");
-    printf("[1] Marital Status Deduction: %-5s %61.2f\n",citizen->martialStatus ? "Yes" : "No",citizen->martialStatus ? 5000.0 : 0.0);
+    printf("[1] Marital Status Deduction: %-5s %61.2f\n",citizen->maritalStatus ? "Yes" : "No",citizen->maritalStatus ? deductionTable[0].amount : 0.0);
     printf("[2] Children Deduction: %-42s %30.2f\n",childTablestring[child_cat],child_deduction_amt);
-    printf("[3] Special Healthcare Deduction: %-5s %57.2f\n",citizen->specialHealthcare ? "Yes" : "No",citizen->specialHealthcare ? 20000.0 : 0.0);
+    printf("[3] Special Healthcare Deduction: %-5s %57.2f\n",citizen->specialHealthcare ? "Yes" : "No",citizen->specialHealthcare ? deductionTable[1].amount : 0.0);
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("Total Deduction: %80.2f\n", citizen->totalDeduction);
     printf("-------------------------------------------------------------------------------------------------\n");
@@ -1453,7 +1489,7 @@ Deduction Category Available:
 [1] Marital Status Deduction (Yes/No)):
 [2] Children Deduction (Deduction Category):
 [3] Special Healthcare Deduction (Yes/No):
--------------------------------------------------------------------------------------(Ciallo～(∠・ω< )⌒★)
+-------------------------------------------------------------------------------------
 Total Deduction :
 -------------------------------------------------------------------------------------
 Taxable Income :
@@ -1472,7 +1508,7 @@ Tax Per Month :
 void PrintCitizenInfo(int user_index) { //same as the dashbord just use fprintf(file_path, t), to print ot the txt fi;e 
     CalculateTax(user_index);
     char filename[100];
-    snprintf(filename, sizeof(filename), "Citizen_%s_Info.txt", citizen_list[user_index].citizenId);
+    snprintf(filename, sizeof(filename), "Citizen_%s_Info.txt", citizen_list[user_index].citizenID);
     FILE *file_path = fopen(filename, "w");
     if (file_path == NULL) {
         printf("[!] Error saving data!\n");
@@ -1483,14 +1519,14 @@ void PrintCitizenInfo(int user_index) { //same as the dashbord just use fprintf(
     int child_cat = Citizen->deduction[0].category[1];
     double child_deduction_amt = lookupChildAllowance(Citizen->numberOfChildren, Citizen->childrenUnder18, childTable, 4);
 
-    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");//(Ciallo～(∠・ω< )⌒★)
+    fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
     fprintf(file_path, "========================================= Tax Dashboard =========================================\n");
     fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
     fprintf(file_path, "Hi, %s\n", Citizen->citizenName);
     fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path, "Citizen ID: %s\n", Citizen->citizenId);
+    fprintf(file_path, "Citizen ID: %s\n", Citizen->citizenID);
     fprintf(file_path, "Age: %d\n", Citizen->age);
-    fprintf(file_path, "Marital Status: %s\n", Citizen->martialStatus ? "Married" : "Single");
+    fprintf(file_path, "Marital Status: %s\n", Citizen->maritalStatus ? "Married" : "Single");
     fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
     fprintf(file_path, "Number of Children: %d\n", Citizen->numberOfChildren);
     fprintf(file_path, "Number of Children Under 18: %d\n", Citizen->childrenUnder18);
@@ -1500,14 +1536,14 @@ void PrintCitizenInfo(int user_index) { //same as the dashbord just use fprintf(
     fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
     fprintf(file_path, "Deduction Category Available:\n");
     fprintf(file_path, "[1] Marital Status Deduction: %-5s %61.2f\n",
-            Citizen->martialStatus ? "Yes" : "No",
-            Citizen->martialStatus ? 5000.0 : 0.0);
+            Citizen->maritalStatus ? "Yes" : "No",
+            Citizen->maritalStatus ? deductionTable[0].amount : 0.0);
     fprintf(file_path, "[2] Children Deduction: %-42s %30.2f\n",
             childTablestring[child_cat],
             child_deduction_amt);
     fprintf(file_path, "[3] Special Healthcare Deduction: %-5s %57.2f\n",
             Citizen->specialHealthcare ? "Yes" : "No",
-            Citizen->specialHealthcare ? 20000.0 : 0.0);
+            Citizen->specialHealthcare ? deductionTable[1].amount : 0.0);
     fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
     fprintf(file_path, "Total Deduction: %80.2f\n", Citizen->totalDeduction);
     fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
@@ -1543,7 +1579,7 @@ void AdminAddCitizen() { // this is the same logic as the register user but this
     ClearScreen();
     if (registered_user >= MAX_CITIZENS) {
         printf("[!] Maximum user limit (%d) reached.\n", MAX_CITIZENS);
-        getch();
+        getch();//Ciallo～ (∠・ω< )⌒★
         return;
     }
 
@@ -1588,7 +1624,7 @@ void AdminAddCitizen() { // this is the same logic as the register user but this
             continue;
         }
 
-        strcpy(new_citizen->citizenId, temp_input);
+        strcpy(new_citizen->citizenID, temp_input);
         strcpy(new_citizen->citizenPassword, temp_input); // Password = Citizen ID
         break;
     }
@@ -1621,7 +1657,7 @@ void AdminAddCitizen() { // this is the same logic as the register user but this
     registered_user++;
     new_citizen->LoginCount = 2;
     GetCitizenInfo(idx);
-    printf("\n[+] Citizen added! Default password set to Citizen ID (%s).\nPress any key to return...", new_citizen->citizenId);
+    printf("\n[+] Citizen added! Default password set to Citizen ID (%s).\nPress any key to return...", new_citizen->citizenID);
     getch();
 }
 
@@ -1636,7 +1672,7 @@ void AdminWatchCitizenPersonalReport() { // function for admin to view individua
     
     int found_idx = -1;
     for (int i = 0; i < registered_user; i++) { // search through array for matching ID
-        if (strcmp(citizen_list[i].citizenId, target_id) == 0) {
+        if (strcmp(citizen_list[i].citizenID, target_id) == 0) {
             found_idx = i;
             break;
         }
@@ -1656,7 +1692,7 @@ void AdminWatchCitizenPersonalReport() { // function for admin to view individua
         ClearScreen();
         if (ConfirmAction("Do you want to print this dashboard to a text file?")) {
             PrintCitizenInfo(found_idx); // reuse the existing export function
-            printf("\n[+] Citizen personal report saved to 'Citizen_%s_Info.txt' successfully.\n", citizen_list[found_idx].citizenId);
+            printf("\n[+] Citizen personal report saved to 'Citizen_%s_Info.txt' successfully.\n", citizen_list[found_idx].citizenID);
         }
         printf("Press any key to return...");
         getch();
@@ -1696,7 +1732,7 @@ void AdminMenu(int *running) {
             RemoveNewLine(target_id);
             int found_idx = -1;
             for (int i = 0; i < registered_user; i++) { // loop in the struct to find the id 
-                if (strcmp(citizen_list[i].citizenId, target_id) == 0) {
+                if (strcmp(citizen_list[i].citizenID, target_id) == 0) {
                     found_idx = i;
                     break;
                 }
@@ -1716,12 +1752,12 @@ void AdminMenu(int *running) {
             adminSummaryDashboard();
             break;
         case 6: { // Print Overall Statistics (Choose Summary Categories or Table Categories to Print)
-            int selected_cats[15];
+            int selected_cats[17];
             int cat_count = 0;
             double threshold = 50000.0;
             if (SelectSummaryDashboardCategories(selected_cats, &cat_count, &threshold)) {  //selectSummaryDashCat 
                 ClearScreen();
-                PrintadminSummaryDashboard(selected_cats, cat_count, threshold); // the call the print function 
+                PrintadminSummaryDashboard(selected_cats, cat_count, threshold); // the call the print function //Ciallo～ (∠・ω< )⌒★
                 printf("Press any key to return...");
                 getch();
             }
@@ -1791,11 +1827,12 @@ int main() { // the main
                         ClearScreen();
                         temp_value = CheckValidDouble("Please enter the children below 18 count to lookup the child allowance: ");
                         double child_allowance = lookupChildAllowance((int)temp_value, (int)temp_value, childTable, 4); // lookup finction 
-                        for (int i = 0; i < 4; i++) {
-                            printf("Child Allowance %c: %d to %d children, Amount: %.2f\n",'A' + i, childTable[i].minChildren, childTable[i].maxChildren, childTable[i].amount); // print yjr table out 
+                        for (int i = 0; i < 3; i++) {
+                            printf("Child Allowance %c: %d to %d children, Amount: %.2f\n",'A' + i, childTable[i].minChildren, childTable[i].maxChildren, childTable[i].amount); // print yjr table out
                         }
+                        printf("Child Allowance D: %d or more children, Amount: %.2f\n", childTable[3].minChildren, childTable[3].amount); // last category got no upper limit (same as bracket 7)
                         printf("\n--------------------------------------------------------------------------\n");
-                        printf("Your children count of %d falls into a child allowance of %.2f\n", (int)temp_value, child_allowance);
+                        printf("Your children count of %d falls into a child allowance of %.2f\n", (int)temp_value, child_allowance);//Ciallo～ (∠・ω< )⌒★
                         printf("Press any key to return...");
                         getch();
                         break;
