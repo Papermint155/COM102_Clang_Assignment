@@ -145,11 +145,11 @@ struct Citizen{
     char citizenPassword[20];
     int LoginCount;
     int age;
-    bool maritalStatus;
+    int maritalStatus;
     double annualIncome;
     int numberOfChildren;
     int childrenUnder18;
-    bool specialHealthcare;
+    int specialHealthcare;
     double totalDeduction;
     double taxableIncome;
     double incomeTax;
@@ -224,24 +224,107 @@ int CheckInputBlank(char *str)
     return 1;
 }
 
-double CheckValidDouble(char *message)
-{ // puting * to wrong (solve)
+double CheckValidDoubleRange(const char *message, double min_val, double max_val) {
+    char buf[100];
+    char *endptr;
     double value;
-    while (1)
-    {
+
+    while (1) {
         printf("%s", message);
-        if (scanf("%lf", &value) == 1 && value >= 0 && value < 1.7976931348623157E+308)
-        {
+        if (!fgets(buf, sizeof(buf), stdin)) continue;
+        if (strchr(buf, '\n') == NULL) {
+            printf("[!] Error: Input too long!\n");
             ClearInputBuffer();
-            return value;
+            continue;
         }
-        else
-        {
-            printf("Please enter a valid positive number for this field.\n");
+        RemoveNewLine(buf);
+        if (CheckInputBlank(buf)) {
+            printf("[!] Error: Input cannot be blank.\n");
+            continue;
+        }
+        value = strtod(buf, &endptr);
+        while (*endptr == ' ' || *endptr == '\t') endptr++; // allow trailing spaces only
+        if (*endptr != '\0' || isnan(value) || value < min_val || value > max_val) {
+            printf("[!] Error: Please enter a valid number between %.2f and %.2f.\n", min_val, max_val);
+            continue;
+        }
+        return value;
+    }
+}
+
+double CheckValidDouble(char *message) {
+    return CheckValidDoubleRange(message, 0.0, 1.7976931348623157E+308);
+}
+
+int CheckValidInt(const char *message, int min_val, int max_val) {
+    char buf[100];
+    char *endptr;
+    long value;
+
+    while (1) {
+        printf("%s", message);
+        if (!fgets(buf, sizeof(buf), stdin)) continue;
+        if (strchr(buf, '\n') == NULL) {
+            printf("[!] Error: Input too long!\n");
             ClearInputBuffer();
+            continue;
+        }
+        RemoveNewLine(buf);
+        if (CheckInputBlank(buf)) {
+            printf("[!] Error: Input cannot be blank.\n");
+            continue;
+        }
+        value = strtol(buf, &endptr, 10);
+        while (*endptr == ' ' || *endptr == '\t') endptr++;
+        if (*endptr != '\0' || value < min_val || value > max_val) {
+            printf("[!] Error: Please enter a valid whole number between %d and %d.\n", min_val, max_val);
+            continue;
+        }
+        return (int)value;
+    }
+}
+
+int IsValidName(const char *str) {
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (!isalpha((unsigned char)str[i]) && str[i] != ' ') {
+            return 0;
         }
     }
-    return value ;
+    return 1;
+}
+
+int IsValidID(const char *str) {
+    if (strlen(str) != 12) return 0;
+    for (int i = 0; i < 12; i++) {
+        if (!isdigit((unsigned char)str[i])) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+void GetValidCategoryName(char *dest, int max_len, const char *prompt) {
+    char buf[100];
+    while (1) {
+        printf("%s", prompt);
+        if (!fgets(buf, sizeof(buf), stdin)) continue;
+        if (strchr(buf, '\n') == NULL) {
+            printf("[!] Error: Name too long (max %d chars)!\n", max_len - 1);
+            ClearInputBuffer();
+            continue;
+        }
+        RemoveNewLine(buf);
+        if (CheckInputBlank(buf) || (int)strlen(buf) >= max_len) {
+            printf("[!] Error: Name must be 1-%d characters.\n", max_len - 1);
+            continue;
+        }
+        if (strchr(buf, '"') != NULL) {
+            printf("[!] Error: Double quotes (\") are not allowed in names.\n");
+            continue;
+        }
+        strcpy(dest, buf);
+        return;
+    }
 }
 
 int SelectOption(char option[][40], int total_choice)
@@ -368,6 +451,7 @@ int CheckIdUniqueness(char *id) { // check uquinees in id
 
 
 double lookupTaxRate(double taxableIncome, struct TaxBracket table[], int size) {
+    if (size <= 0) return 0.0;
     if (taxableIncome <= table[0].maxIncome) {
         return table[0].taxRate; // if less then first category direct return, save calculation
     }
@@ -443,6 +527,13 @@ void LoadSystemData() {
 
     fscanf(fp, "%d %d %d\n", &bracket_count, &child_table_count, &deduction_count);
 
+    if (bracket_count < 0) bracket_count = 0;
+    if (bracket_count > MAX_BRACKETS) bracket_count = MAX_BRACKETS;
+    if (child_table_count < 0) child_table_count = 0;
+    if (child_table_count > MAX_CHILD_ALLOWANCE) child_table_count = MAX_CHILD_ALLOWANCE;
+    if (deduction_count < 0) deduction_count = 0;
+    if (deduction_count > MAX_DEDUCTIONS) deduction_count = MAX_DEDUCTIONS;
+
     for (int i = 0; i < bracket_count; i++) {
         fscanf(fp, "%lf, %lf, %lf\n",&brackets[i].minIncome, &brackets[i].maxIncome, &brackets[i].taxRate);
     }
@@ -511,12 +602,12 @@ void RegisterUser() { // use to register user
         }
 
         RemoveNewLine(temp_input); //remove the enter indicator 
-        if (strlen(temp_input) != 12 || CheckInputBlank(temp_input)) { // check the indentity of the id data 
-            printf("[!] Error: Citizen ID must be exactly 12 characters!\n"); // if not , error code 
+        if (!IsValidID(temp_input)) {
+            printf("[!] Error: Citizen ID must be exactly 12 digits (0-9)!\n");
             getch();
             ClearScreen();
             continue;
-        }
+        }   
 
         if (!CheckIdUniqueness(temp_input)) { // check the id is it unique ?
             printf("[!] Error: Citizen ID already exists!\n"); //if not print erro code 
@@ -550,8 +641,8 @@ void RegisterUser() { // use to register user
         }
 
         RemoveNewLine(temp_input);
-        if (strlen(temp_input) >= 50 || CheckInputBlank(temp_input)) { // double check 
-            printf("[!] Error: Username must be 1-49 characters.\n");
+        if (strlen(temp_input) >= 50 || CheckInputBlank(temp_input) || !IsValidName(temp_input)) {
+            printf("[!] Error: Name must be 1-49 letters/spaces only.\n");
             getch();
             ClearScreen();
             continue;
@@ -672,90 +763,64 @@ int UserLogin() { //login function
 void GetCitizenInfo(int user_index) { // get the basic info of the citizen
     struct Citizen *citizen = &citizen_list[user_index];
     while (1) {
-        ClearScreen();
-        printf("Enter Age (18 - 149): ");
-        if (scanf("%d", &citizen->age) == 1 && citizen->age >= 18 && citizen->age < 150) { // ensure the age range isin the certify range which can only give tax after 18 
-            ClearInputBuffer();
-            if (ConfirmAction("Confirm Age?")) // Confirm message 
-                break;
-        } else {
-            printf("Please enter a valid age between 18 and 149.\n"); // error prompt 
-            ClearInputBuffer();
-            getch();
-        }
-    }
-
-    while (1) {
-        ClearScreen();
-        printf("Enter Marital Status (0 for Single, 1 for Married): ");
-        if (scanf("%d", &citizen->maritalStatus) == 1 // check correct data type or not or 
-        && (citizen->maritalStatus == 0 || citizen->maritalStatus == 1)) { // check which user enter 
-            ClearInputBuffer();
-            if (ConfirmAction("Confirm Marital Status?")) { // corfirmation 
-                citizen->deduction[0].category[0] = citizen->maritalStatus; // write in struct 
+            ClearScreen();
+            int val = CheckValidInt("Enter Age (18 - 149): ", 18, 149);
+            if (ConfirmAction("Confirm Age?")) {
+                citizen->age = val;
                 break;
             }
-        } else {
-            printf("Please enter 0 for Single or 1 for Married.\n"); //error code 
-            ClearInputBuffer();
-            getch();
+        }
+
+    // Marital Status
+    while (1) {
+        ClearScreen();
+        int val = CheckValidInt("Enter Marital Status (0 for Single, 1 for Married): ", 0, 1);
+        if (ConfirmAction("Confirm Marital Status?")) {
+            citizen->maritalStatus = val;
+            citizen->deduction[0].category[0] = val;
+            break;
         }
     }
 
     ClearScreen();//Ciallo～ (∠・ω< )⌒★
     citizen->annualIncome = CheckValidDouble("Enter Annual Income: RM "); // get the Annual income and also check the data valid
 
+    // Number of Children
     while (1) {
         ClearScreen();
-        printf("Enter Number of Children (0 - 19): ");
-        if (scanf("%d", &citizen->numberOfChildren) == 1 && // check for correct data type 
-            citizen->numberOfChildren >= 0 && citizen->numberOfChildren < 20) { // check fall in this range 
-            ClearInputBuffer();
-            if (ConfirmAction("Confirm Number of Children?")) //confirmation
-                break;
-        } else {
-            printf("Please enter a valid number of children (0-19).\n"); //error prompt 
-            ClearInputBuffer();
-            getch();
-        }
-    }
-    while (1) {
-        ClearScreen();
-        printf("Enter Number of Children Under 18 (0 - %d): ", citizen->numberOfChildren);
-        if (scanf("%d", &citizen->childrenUnder18) == 1 && // same check / data 
-            citizen->childrenUnder18 >= 0 && // is it postive value and less than the number of kid 
-            citizen->childrenUnder18 <= citizen->numberOfChildren) {
-            ClearInputBuffer();
-            if (ConfirmAction("Confirm Number of Children Under 18?")) { // confirmation 
-                UpdateChildCategoryIndex(citizen);
-                break;
-            }
-        } else {
-            printf("Please enter a valid number of children under 18 (0-%d).\n", citizen->numberOfChildren); // error prompt
-            ClearInputBuffer();
-            getch();
+        int val = CheckValidInt("Enter Number of Children (0 - 19): ", 0, 19);
+        if (ConfirmAction("Confirm Number of Children?")) {
+            citizen->numberOfChildren = val;
+            break;
         }
     }
 
+    // Children Under 18
     while (1) {
         ClearScreen();
-        printf("Special Healthcare Status (0 for No, 1 for Yes): ");
-        if (scanf("%d", &citizen->specialHealthcare) == 1 && // smae / data tyoes 
-            (citizen->specialHealthcare == 0 || citizen->specialHealthcare == 1)) { //check it is 0 or 1 only
-            ClearInputBuffer();
-            if (citizen->specialHealthcare == 1 && citizen->maritalStatus == 0 && citizen->numberOfChildren == 0) { // only spouse or child can need special healthcare
-                printf("[!] Error: Special healthcare is only for spouse or child. Single citizen with no child cannot claim it.\n");
-                getch();
-                continue;
-            }
-            if (ConfirmAction("Confirm Special Healthcare Status?")) {
-                citizen->deduction[0].category[2] = citizen->specialHealthcare; // put into the struct 
-                break;
-            }
-        } else {
-            printf("Please enter 0 for No or 1 for Yes.\n"); //error prompt
-            ClearInputBuffer();
+        char prompt[80];
+        snprintf(prompt, sizeof(prompt), "Enter Number of Children Under 18 (0 - %d): ", citizen->numberOfChildren);
+        int val = CheckValidInt(prompt, 0, citizen->numberOfChildren);
+        if (ConfirmAction("Confirm Number of Children Under 18?")) {
+            citizen->childrenUnder18 = val;
+            UpdateChildCategoryIndex(citizen);
+            break;
+        }
+    }
+
+    // Special Healthcare Status
+    while (1) {
+        ClearScreen();
+        int val = CheckValidInt("Special Healthcare Status (0 for No, 1 for Yes): ", 0, 1);
+        if (val == 1 && citizen->maritalStatus == 0 && citizen->numberOfChildren == 0) {
+            printf("[!] Error: Special healthcare is only for spouse or child. Single citizen with no child cannot claim it.\n");
             getch();
+            continue;
+        }
+        if (ConfirmAction("Confirm Special Healthcare Status?")) {
+            citizen->specialHealthcare = val;
+            citizen->deduction[0].category[2] = val;
+            break;
         }
     }
 
@@ -772,33 +837,21 @@ void EditCitizenInfo(int user_index, int field_choice) { //edit the user info
     case 1: //edit age 
         while (1) {
             ClearScreen();
-            printf("Enter New Age (18 - 149): ");
-            if (scanf("%d", &citizen->age) == 1 && citizen->age >= 18 && citizen->age < 150) {
-                ClearInputBuffer();
-                if (ConfirmAction("Confirm New Age?"))
-                    break;
-            } else {
-                printf("Please enter a valid age between 18 and 149.\n");
-                ClearInputBuffer();
-                getch();
+            int val = CheckValidInt("Enter Age (18 - 149): ", 18, 149);
+            if (ConfirmAction("Confirm Age?")) {
+                citizen->age = val;
+                break;
             }
         }
         break;
     case 2: // edit marital stat
         while (1) {
             ClearScreen();
-            printf("Enter New Marital Status (0 for Single, 1 for Married): ");//Ciallo～ (∠・ω< )⌒★
-            if (scanf("%d", &citizen->maritalStatus) == 1 &&
-                (citizen->maritalStatus == 0 || citizen->maritalStatus == 1)) {
-                ClearInputBuffer();
-                if (ConfirmAction("Confirm New Marital Status?")) {
-                    citizen->deduction[0].category[0] = citizen->maritalStatus;
-                    break;
-                }
-            } else {
-                printf("Please enter 0 for Single or 1 for Married.\n");
-                ClearInputBuffer();
-                getch();
+            int val = CheckValidInt("Enter Marital Status (0 for Single, 1 for Married): ", 0, 1);
+            if (ConfirmAction("Confirm Marital Status?")) {
+                citizen->maritalStatus = val;
+                citizen->deduction[0].category[0] = val;
+                break;
             }
         }
         break;
@@ -806,66 +859,46 @@ void EditCitizenInfo(int user_index, int field_choice) { //edit the user info
         ClearScreen();
         citizen->annualIncome = CheckValidDouble("Enter New Annual Income: RM ");
         break;
-    case 4:// edit num child
+    case 4: // edit num child
         while (1) {
             ClearScreen();
-            printf("Enter New Number of Children (0 - 19): ");
-            if (scanf("%d", &citizen->numberOfChildren) == 1 &&
-                citizen->numberOfChildren >= 0 && citizen->numberOfChildren < 20) {
-                ClearInputBuffer();
-                if (ConfirmAction("Confirm New Number of Children?")) {
-                    if (citizen->childrenUnder18 > citizen->numberOfChildren) {
-                        citizen->childrenUnder18 = citizen->numberOfChildren;
-                    }
-                    UpdateChildCategoryIndex(citizen);
-                    break;
+            int val = CheckValidInt("Enter New Number of Children (0 - 19): ", 0, 19);
+            if (ConfirmAction("Confirm New Number of Children?")) {
+                citizen->numberOfChildren = val;
+                if (citizen->childrenUnder18 > citizen->numberOfChildren) {
+                    citizen->childrenUnder18 = citizen->numberOfChildren;
                 }
-            } else {
-                printf("Please enter a valid number of children (0-19).\n");
-                ClearInputBuffer();
-                getch();
-            }
-        }
-        break; //fall though to make user to edit the um child under 18 after edit num of chile 
-    case 5: //edit num of child under 18
-        while (1) {
-            ClearScreen();
-            printf("Enter New Number of Children Under 18 (0 - %d): ", citizen->numberOfChildren);
-            if (scanf("%d", &citizen->childrenUnder18) == 1 &&
-                citizen->childrenUnder18 >= 0 &&
-                citizen->childrenUnder18 <= citizen->numberOfChildren) {
-                ClearInputBuffer();
-                if (ConfirmAction("Confirm New Number of Children Under 18?")) {
-                    UpdateChildCategoryIndex(citizen);
-                    break;
-                }
-            } else {
-                printf("Please enter a valid number of children under 18 (0-%d).\n", citizen->numberOfChildren);
-                ClearInputBuffer();
-                getch();
+                UpdateChildCategoryIndex(citizen);
+                break;
             }
         }
         break;
-    case 6: // edit healthcare stat 
+    case 5: // edit num of child under 18
         while (1) {
             ClearScreen();
-            printf("Special Healthcare Status (0 for No, 1 for Yes): ");
-            if (scanf("%d", &citizen->specialHealthcare) == 1 &&
-                (citizen->specialHealthcare == 0 || citizen->specialHealthcare == 1)) {
-                ClearInputBuffer();
-                if (citizen->specialHealthcare == 1 && citizen->maritalStatus == 0 && citizen->numberOfChildren == 0) { // only spouse or child can need special healthcare
-                    printf("[!] Error: Special healthcare is only for spouse or child. Single citizen with no child cannot claim it.\n");
-                    getch();
-                    continue;
-                }
-                if (ConfirmAction("Confirm Special Healthcare Status?")) {
-                    citizen->deduction[0].category[2] = citizen->specialHealthcare;
-                    break;
-                }
-            } else {
-                printf("Please enter 0 for No or 1 for Yes.\n");
-                ClearInputBuffer();
+            char prompt[80];
+            snprintf(prompt, sizeof(prompt), "Enter New Number of Children Under 18 (0 - %d): ", citizen->numberOfChildren);
+            int val = CheckValidInt(prompt, 0, citizen->numberOfChildren);
+            if (ConfirmAction("Confirm New Number of Children Under 18?")) {
+                citizen->childrenUnder18 = val;
+                UpdateChildCategoryIndex(citizen);
+                break;
+            }
+        }
+        break;
+    case 6: // edit healthcare stat
+        while (1) {
+            ClearScreen();
+            int val = CheckValidInt("Special Healthcare Status (0 for No, 1 for Yes): ", 0, 1);
+            if (val == 1 && citizen->maritalStatus == 0 && citizen->numberOfChildren == 0) {
+                printf("[!] Error: Special healthcare is only for spouse or child. Single citizen with no child cannot claim it.\n");
                 getch();
+                continue;
+            }
+            if (ConfirmAction("Confirm Special Healthcare Status?")) {
+                citizen->specialHealthcare = val;
+                citizen->deduction[0].category[2] = val;
+                break;
             }
         }
         break;
@@ -1308,6 +1341,24 @@ int SelectSummaryDashboardCategories(int selected_cats[], int *cat_count, double
 
 void SearchInfobyCategory(int category_choice, char *search_term) { // search function by cate 
     ClearScreen();
+    // Validate numeric search terms before looping
+    if (category_choice == 3 || category_choice == 6 || category_choice == 7) {
+        char *endptr;
+        strtol(search_term, &endptr, 10);
+        if (CheckInputBlank(search_term) || *endptr != '\0') {
+            printf("[!] Error: Please enter a valid whole number for this search category.\nPress any key to return...");
+            getch();
+            return;
+        }
+    } else if (category_choice == 5 || category_choice == 9 || category_choice == 10 || category_choice == 11) {
+        char *endptr;
+        strtod(search_term, &endptr);
+        if (CheckInputBlank(search_term) || *endptr != '\0') {
+            printf("[!] Error: Please enter a valid numeric amount for this search category.\nPress any key to return...");
+            getch();
+            return;
+        }
+    }
     struct Citizen matched_citizens[MAX_CITIZENS]; //open a struct to save the match citizen 
     int found = 0;
 
@@ -1636,8 +1687,8 @@ void AdminAddCitizen() { // this is the same logic as the register user but this
         }
 
         RemoveNewLine(temp_input);
-        if (strlen(temp_input) != 12 || CheckInputBlank(temp_input)) {
-            printf("[!] Error: Citizen ID must be 12 characters!\n");
+        if (!IsValidID(temp_input)) {
+            printf("[!] Error: Citizen ID must be exactly 12 digits (0-9)!\n");
             getch();
             ClearScreen();
             continue;
@@ -1672,8 +1723,10 @@ void AdminAddCitizen() { // this is the same logic as the register user but this
         }
 
         RemoveNewLine(temp_input);
-        if (strlen(temp_input) >= 50 || CheckInputBlank(temp_input)) {
-            printf("[!] Error: Name must be 1-49 characters.\n");
+        if (strlen(temp_input) >= 50 || CheckInputBlank(temp_input) || !IsValidName(temp_input)) {
+            printf("[!] Error: Name must be 1-49 letters/spaces only.\n");
+            getch();
+            ClearScreen();
             continue;
         }
 
@@ -1730,6 +1783,18 @@ void AdminWatchCitizenPersonalReport() { // function for admin to view individua
     }
 }
 
+void SortTaxBrackets() {
+    for (int i = 0; i < bracket_count - 1; i++) {
+        for (int j = 0; j < bracket_count - 1 - i; j++) {
+            if (brackets[j].minIncome > brackets[j + 1].minIncome) {
+                struct TaxBracket temp = brackets[j];
+                brackets[j] = brackets[j + 1];
+                brackets[j + 1] = temp;
+            }
+        }
+    }
+}
+
 void ManageTaxRules() {
     char rule_menu[4][40] = {
         "Manage Tax Brackets",
@@ -1763,25 +1828,31 @@ void ManageTaxRules() {
             printf("---------------------------------\n");
 
             if (action == 0) { // Add
-                if (bracket_count >= MAX_BRACKETS) { printf("Max limit reached!\n"); getch(); continue; }
-                brackets[bracket_count].minIncome = CheckValidDouble("Enter Min Income: RM ");
-                brackets[bracket_count].maxIncome = CheckValidDouble("Enter Max Income: RM ");
-                brackets[bracket_count].taxRate = CheckValidDouble("Enter Tax Rate (e.g. 0.05 for 5%): ");
+                if (bracket_count >= MAX_BRACKETS) { printf("[!] Max limit reached!\n"); getch(); continue; }
+                double min_inc = CheckValidDouble("Enter Min Income: RM ");
+                double max_inc = CheckValidDoubleRange("Enter Max Income: RM ", min_inc + 0.01, 1.7976931348623157E+308);
+                double rate = CheckValidDoubleRange("Enter Tax Rate (0.00 to 1.00, e.g. 0.05 for 5%): ", 0.0, 1.0);
+                brackets[bracket_count].minIncome = min_inc;
+                brackets[bracket_count].maxIncome = max_inc;
+                brackets[bracket_count].taxRate = rate;
                 bracket_count++;
+                SortTaxBrackets();
                 SaveSystemData();
-                printf("[+] Tax bracket added!\n");
+                printf("[+] Tax bracket added and sorted!\n");
             } else if (action == 1 && bracket_count > 0) { // Edit
-                int idx = (int)CheckValidDouble("Enter Bracket number to edit: ") - 1;
-                if (idx >= 0 && idx < bracket_count) {
-                    brackets[idx].minIncome = CheckValidDouble("New Min Income: RM ");
-                    brackets[idx].maxIncome = CheckValidDouble("New Max Income: RM ");
-                    brackets[idx].taxRate = CheckValidDouble("New Tax Rate (e.g. 0.05 for 5%): ");
-                    SaveSystemData();
-                    printf("[+] Tax bracket updated!\n");
-                } else printf("[!] Invalid index.\n");
+                int idx = CheckValidInt("Enter Bracket number to edit: ", 1, bracket_count) - 1;
+                double min_inc = CheckValidDouble("New Min Income: RM ");
+                double max_inc = CheckValidDoubleRange("New Max Income: RM ", min_inc + 0.01, 1.7976931348623157E+308);
+                double rate = CheckValidDoubleRange("New Tax Rate (0.00 to 1.00): ", 0.0, 1.0);
+                brackets[idx].minIncome = min_inc;
+                brackets[idx].maxIncome = max_inc;
+                brackets[idx].taxRate = rate;
+                SortTaxBrackets();
+                SaveSystemData();
+                printf("[+] Tax bracket updated and sorted!\n");
             } else if (action == 2 && bracket_count > 0) { // Delete
-                int idx = (int)CheckValidDouble("Enter Bracket number to delete: ") - 1;
-                if (idx >= 0 && idx < bracket_count && ConfirmAction("Confirm delete?")) {
+                int idx = CheckValidInt("Enter Bracket number to delete: ", 1, bracket_count) - 1;
+                if (ConfirmAction("Confirm delete?")) {
                     for (int i = idx; i < bracket_count - 1; i++) brackets[i] = brackets[i + 1];
                     bracket_count--;
                     SaveSystemData();
@@ -1793,36 +1864,36 @@ void ManageTaxRules() {
         else if (type == 1) {
             printf("--- Current Child Allowances (%d) ---\n", child_table_count);
             for (int i = 0; i < child_table_count; i++) {
-                printf("[%d] %s | %d-%d children | RM %.2f\n", i + 1, childTable[i].category, childTable[i].minChildren, childTable[i].maxChildren, childTable[i].amount);
+                printf("[%d] %s | %d-%d children | RM %.2f\n",i + 1, childTable[i].category, childTable[i].minChildren,childTable[i].maxChildren, childTable[i].amount);
             }
             printf("-------------------------------------\n");
 
             if (action == 0) { // Add
-                if (child_table_count >= MAX_CHILD_ALLOWANCE) { printf("Max limit reached!\n"); getch(); continue; }
-                printf("Enter Category Name: ");
-                fgets(childTable[child_table_count].category, 25, stdin);
-                RemoveNewLine(childTable[child_table_count].category);
-                childTable[child_table_count].minChildren = (int)CheckValidDouble("Min Children: ");
-                childTable[child_table_count].maxChildren = (int)CheckValidDouble("Max Children: ");
-                childTable[child_table_count].amount = CheckValidDouble("Allowance Amount: RM ");
+                if (child_table_count >= MAX_CHILD_ALLOWANCE) { printf("[!] Max limit reached!\n"); getch(); continue; }
+                GetValidCategoryName(childTable[child_table_count].category, 25, "Enter Category Name: ");
+                int min_c = CheckValidInt("Min Children (1-99): ", 1, 99);
+                int max_c = CheckValidInt("Max Children: ", min_c, 99);
+                double amt = CheckValidDouble("Allowance Amount: RM ");
+                childTable[child_table_count].minChildren = min_c;
+                childTable[child_table_count].maxChildren = max_c;
+                childTable[child_table_count].amount = amt;
                 child_table_count++;
                 SaveSystemData();
                 printf("[+] Child allowance added!\n");
             } else if (action == 1 && child_table_count > 0) { // Edit
-                int idx = (int)CheckValidDouble("Enter Child Allowance number to edit: ") - 1;
-                if (idx >= 0 && idx < child_table_count) {
-                    printf("Enter New Category Name: ");
-                    fgets(childTable[idx].category, 25, stdin);
-                    RemoveNewLine(childTable[idx].category);
-                    childTable[idx].minChildren = (int)CheckValidDouble("New Min Children: ");
-                    childTable[idx].maxChildren = (int)CheckValidDouble("New Max Children: ");
-                    childTable[idx].amount = CheckValidDouble("New Allowance Amount: RM ");
-                    SaveSystemData();
-                    printf("[+] Child allowance updated!\n");
-                } else printf("[!] Invalid index.\n");
+                int idx = CheckValidInt("Enter Child Allowance number to edit: ", 1, child_table_count) - 1;
+                GetValidCategoryName(childTable[idx].category, 25, "Enter New Category Name: ");
+                int min_c = CheckValidInt("New Min Children (1-99): ", 1, 99);
+                int max_c = CheckValidInt("New Max Children: ", min_c, 99);
+                double amt = CheckValidDouble("New Allowance Amount: RM ");
+                childTable[idx].minChildren = min_c;
+                childTable[idx].maxChildren = max_c;
+                childTable[idx].amount = amt;
+                SaveSystemData();
+                printf("[+] Child allowance updated!\n");
             } else if (action == 2 && child_table_count > 0) { // Delete
-                int idx = (int)CheckValidDouble("Enter Child Allowance number to delete: ") - 1;
-                if (idx >= 0 && idx < child_table_count && ConfirmAction("Confirm delete?")) {
+                int idx = CheckValidInt("Enter Child Allowance number to delete: ", 1, child_table_count) - 1;
+                if (ConfirmAction("Confirm delete?")) {
                     for (int i = idx; i < child_table_count - 1; i++) childTable[i] = childTable[i + 1];
                     child_table_count--;
                     SaveSystemData();
@@ -1839,27 +1910,23 @@ void ManageTaxRules() {
             printf("-------------------------------------\n");
 
             if (action == 0) { // Add
-                if (deduction_count >= MAX_DEDUCTIONS) { printf("Max limit reached!\n"); getch(); continue; }
-                printf("Enter Deduction Name: ");
-                fgets(deductionTable[deduction_count].category, 25, stdin);
-                RemoveNewLine(deductionTable[deduction_count].category);
+                if (deduction_count >= MAX_DEDUCTIONS) { printf("[!] Max limit reached!\n"); getch(); continue; }
+                GetValidCategoryName(deductionTable[deduction_count].category, 25, "Enter Deduction Name: ");
                 deductionTable[deduction_count].amount = CheckValidDouble("Deduction Amount: RM ");
                 deduction_count++;
                 SaveSystemData();
                 printf("[+] Deduction added!\n");
             } else if (action == 1 && deduction_count > 0) { // Edit
-                int idx = (int)CheckValidDouble("Enter Deduction number to edit: ") - 1;
-                if (idx >= 0 && idx < deduction_count) {
-                    printf("Enter New Deduction Name: ");
-                    fgets(deductionTable[idx].category, 25, stdin);
-                    RemoveNewLine(deductionTable[idx].category);
-                    deductionTable[idx].amount = CheckValidDouble("New Deduction Amount: RM ");
-                    SaveSystemData();
-                    printf("[+] Deduction updated!\n");
-                } else printf("[!] Invalid index.\n");
+                int idx = CheckValidInt("Enter Deduction number to edit: ", 1, deduction_count) - 1;
+                GetValidCategoryName(deductionTable[idx].category, 25, "Enter New Deduction Name: ");
+                deductionTable[idx].amount = CheckValidDouble("New Deduction Amount: RM ");
+                SaveSystemData();
+                printf("[+] Deduction updated!\n");
             } else if (action == 2 && deduction_count > 0) { // Delete
-                int idx = (int)CheckValidDouble("Enter Deduction number to delete: ") - 1;
-                if (idx >= 0 && idx < deduction_count && ConfirmAction("Confirm delete?")) {
+                int idx = CheckValidInt("Enter Deduction number to delete: ", 1, deduction_count) - 1;
+                if (idx == 0 || idx == 1) {
+                    printf("[!] Error: Core deductions (Marital & Special Healthcare) cannot be deleted, only edited.\n");
+                } else if (ConfirmAction("Confirm delete?")) {
                     for (int i = idx; i < deduction_count - 1; i++) deductionTable[i] = deductionTable[i + 1];
                     deduction_count--;
                     SaveSystemData();
@@ -2003,20 +2070,16 @@ int main() { // the main
                     }
                     case 2: {
                         ClearScreen();
-                        temp_value = CheckValidDouble("Please enter the children below 18 count to lookup the child allowance: ");
-                        double child_allowance = lookupChildAllowance((int)temp_value, (int)temp_value, childTable, child_table_count);
+                        int child_count = CheckValidInt("Please enter the children below 18 count to lookup the child allowance: ", 0, 99);
+                        double child_allowance = lookupChildAllowance(child_count, child_count, childTable, child_table_count);
                         for (int i = 0; i < child_table_count - 1; i++) {
-                            printf("%s: %d to %d children, Amount: %.2f\n",
-                                    childTable[i].category, childTable[i].minChildren, childTable[i].maxChildren, childTable[i].amount);
+                            printf("%s: %d to %d children, Amount: %.2f\n",childTable[i].category, childTable[i].minChildren, childTable[i].maxChildren, childTable[i].amount);
                         }
                         if (child_table_count > 0) {
-                            printf("%s: %d or more children, Amount: %.2f\n",
-                                    childTable[child_table_count - 1].category,
-                                    childTable[child_table_count - 1].minChildren,
-                                    childTable[child_table_count - 1].amount);
+                            printf("%s: %d or more children, Amount: %.2f\n",childTable[child_table_count - 1].category,childTable[child_table_count - 1].minChildren,childTable[child_table_count - 1].amount);
                         }
                         printf("\n--------------------------------------------------------------------------\n");
-                        printf("Your children count of %d falls into a child allowance of %.2f\n", (int)temp_value, child_allowance);
+                        printf("Your children count of %d falls into a child allowance of %.2f\n", child_count, child_allowance);
                         printf("Press any key to return...");
                         getch();
                         break;
