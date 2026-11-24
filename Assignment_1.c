@@ -12,11 +12,19 @@
 #include <string.h>
 #include <math.h>  // for isnan() function
 #include <conio.h> // getch() function
+#include <stdbool.h>
+#include <ctype.h>
 
 #define MAX_CITIZENS 30 //max user
+#define MAX_BRACKETS 20
+#define MAX_CHILD_ALLOWANCE 20
+#define MAX_DEDUCTIONS 20
 
 int current_active_user = -1; // store the index of the currently logged-in user, -1 means no user is logged in , -2 is admin
 int registered_user = 0; // counter for the number of registered users
+int bracket_count = 0;
+int child_table_count = 0;
+int deduction_count = 0;
 double temp_value = 0.0; //temp variable to used in the taxbracket and child allowance look up
 
 //Menu to edit profile info
@@ -45,7 +53,7 @@ char dash_menu[7][40] = {
 };
 
 // menu for admin 
-char admin_menu[9][40] = {
+char admin_menu[10][40] = {
     "View All Citizens",
     "Search Citizen Info",
     "Add Citizen",
@@ -53,6 +61,7 @@ char admin_menu[9][40] = {
     "Watch Citizen Personal Report",
     "Overall Statistics",
     "Print Overall Statistics",
+    "Manage Tax & Allowance Rules",
     "Logout",
     "Exit"
 };
@@ -112,21 +121,7 @@ struct ChildAllowance {
 };
 
 //Table data for child allowance
-struct ChildAllowance childTable[4] = {
-    {"Child allowance A", 1, 2, 8000.0},
-    {"Child allowance B", 3, 4, 10000.0},
-    {"Child allowance C", 5, 6, 12000.0},
-    {"Child allowance D", 7, 99, 14000.0}
-};
-
-// array that save the category of child allowance
-char childTablestring[5][50] = {
-    "No Child Allowance (Not Eligible)",
-    "Child allowance A: 1-2 children",
-    "Child allowance B: 3-4 children",
-    "Child allowance C: 5-6 children",
-    "Child allowance D: 7 or more children"
-};
+struct ChildAllowance childTable[MAX_CHILD_ALLOWANCE];
 
 //Structure of the Deduction (save the fixed deduction amount, child allowance is in childTable)
 struct Deduction {
@@ -135,10 +130,7 @@ struct Deduction {
 };
 
 //Table data for the Deduction
-struct Deduction deductionTable[2] = {
-    {"Marital allowance", 5000.0},   // [0] married citizen
-    {"Special healthcare", 20000.0}  // [1] spouse or at least one child need special healthcare
-};
+struct Deduction deductionTable[MAX_DEDUCTIONS];
 
 //declaration of the Deduction Category (which deduction the citizen get)
 struct Deduction_Category{
@@ -173,14 +165,7 @@ struct TaxBracket{
 
 //Initalize data in the Tax Bracket
 
-struct TaxBracket brackets[7] = {
-    {0.0, 48000.0, 0.00},
-    {48000.0, 60000.0, 0.05},
-    {60000.0, 100000.0, 0.07},
-    {100000.0, 200000.0, 0.09},
-    {200000.0, 500000.0, 0.14},
-    {500000.0, 1000000.0, 0.19},
-    {1000000.0, 1.7976931348623157E+308, 0.25}};
+struct TaxBracket brackets[MAX_BRACKETS];
 
 //save the citizen struct in a citizenlist array 
 struct Citizen citizen_list[MAX_CITIZENS];
@@ -245,7 +230,7 @@ double CheckValidDouble(char *message)
     while (1)
     {
         printf("%s", message);
-        if (scanf("%lf", &value) == 1 && value >= 0 && value < 2147483647)
+        if (scanf("%lf", &value) == 1 && value >= 0 && value < 1.7976931348623157E+308)
         {
             ClearInputBuffer();
             return value;
@@ -406,21 +391,19 @@ double lookupChildAllowance(int totalChildren, int under18, struct ChildAllowanc
     }
     return 0.0;
 }
-
-void UpdateChildCategoryIndex(struct Citizen *citizen) { // this is to determine the allowance for child
-    if (citizen->numberOfChildren <= 0 || citizen->numberOfChildren != citizen->childrenUnder18) { // error handling again as comfrim -tive categorize as none allowance 
-        citizen->deduction[0].category[1] = 0;
-    } else if (citizen->childrenUnder18 <= 2) {//Ciallo～ (∠・ω< )⌒★
-        citizen->deduction[0].category[1] = 1;
-    } else if (citizen->childrenUnder18 <= 4) {
-        citizen->deduction[0].category[1] = 2;
-    } else if (citizen->childrenUnder18 <= 6) {
-        citizen->deduction[0].category[1] = 3;
-    } else {
-        citizen->deduction[0].category[1] = 4;
+void UpdateChildCategoryIndex(struct Citizen *citizen) {
+    citizen->deduction[0].category[1] = 0; // 0 = Not Eligible
+    if (citizen->numberOfChildren <= 0 || citizen->numberOfChildren != citizen->childrenUnder18) {
+        return;
+    }
+    for (int i = 0; i < child_table_count; i++) {
+        if (citizen->childrenUnder18 >= childTable[i].minChildren &&
+            citizen->childrenUnder18 <= childTable[i].maxChildren) {
+            citizen->deduction[0].category[1] = i + 1;
+            return;
+        }
     }
 }
-
 
 void SaveUserData(){
     FILE *file_path = fopen("userdata.bin", "wb"); // 'wb' = write binary
@@ -448,6 +431,54 @@ void LoadUserData()
     fread(&registered_user, sizeof(int), 1, file_path);         // size_t fread(void *ptr, size_t size, size_t count, FILE *stream) <- the syntax
     fread(citizen_list, sizeof(struct Citizen), 30, file_path); // read the file according to section ( sizeof(struct userProfile)), read 30 time, and read from file-path then save to student_list
     fclose(file_path);
+}
+
+void LoadSystemData() {
+    FILE *fp = fopen("data.txt", "r");
+    if (fp == NULL) {
+        printf("[!] Error: data.txt not found!\n");
+        getch();
+        return;
+    }
+
+    fscanf(fp, "%d %d %d\n", &bracket_count, &child_table_count, &deduction_count);
+
+    for (int i = 0; i < bracket_count; i++) {
+        fscanf(fp, "%lf, %lf, %lf\n",&brackets[i].minIncome, &brackets[i].maxIncome, &brackets[i].taxRate);
+    }
+    for (int i = 0; i < child_table_count; i++) {
+        fscanf(fp, " \"%24[^\"]\", %d, %d, %lf\n", childTable[i].category, &childTable[i].minChildren,&childTable[i].maxChildren, &childTable[i].amount);
+    }
+    for (int i = 0; i < deduction_count; i++) {
+        fscanf(fp, " \"%24[^\"]\", %lf\n",deductionTable[i].category, &deductionTable[i].amount);
+    }
+    fclose(fp);
+}
+
+void SaveSystemData() {
+    FILE *fp = fopen("data.txt", "w");
+    if (fp == NULL) {
+        printf("[!] Error: Could not save to data.txt!\n");
+        getch();
+        return;
+    }
+
+    fprintf(fp, "%d %d %d\n", bracket_count, child_table_count, deduction_count);
+
+    for (int i = 0; i < bracket_count; i++) {
+        fprintf(fp, "%.1f, %.17g, %.2f\n",
+                brackets[i].minIncome, brackets[i].maxIncome, brackets[i].taxRate);
+    }
+    for (int i = 0; i < child_table_count; i++) {
+        fprintf(fp, "\"%s\", %d, %d, %.1f\n",
+                childTable[i].category, childTable[i].minChildren,
+                childTable[i].maxChildren, childTable[i].amount);
+    }
+    for (int i = 0; i < deduction_count; i++) {
+        fprintf(fp, "\"%s\", %.1f\n",
+                deductionTable[i].category, deductionTable[i].amount);
+    }
+    fclose(fp);
 }
 
 void RegisterUser() { // use to register user 
@@ -855,7 +886,7 @@ void CalculateTax(int user_index) { //calc tax function```17-6
         citizen->totalDeduction += deductionTable[0].amount; // marital allowance
     }
     if (citizen->numberOfChildren > 0) { // have child
-        citizen->totalDeduction += lookupChildAllowance(citizen->numberOfChildren, citizen->childrenUnder18, childTable, 4); // check the vlaue in the table
+        citizen->totalDeduction += lookupChildAllowance(citizen->numberOfChildren, citizen->childrenUnder18, childTable, child_table_count); // check the vlaue in the table
     }
     if (citizen->specialHealthcare && (citizen->maritalStatus || citizen->numberOfChildren > 0)) { // got healthcare AND have spouse or child
         citizen->totalDeduction += deductionTable[1].amount; // special healthcare allowance
@@ -872,7 +903,7 @@ void CalculateTax(int user_index) { //calc tax function```17-6
         citizen->taxableIncome = 0.0;
     }
 
-    citizen->incomeTax = citizen->taxableIncome * lookupTaxRate(citizen->taxableIncome, brackets, 7); // add user taxrate using lookup on the table 
+    citizen->incomeTax = citizen->taxableIncome * lookupTaxRate(citizen->taxableIncome, brackets, bracket_count); // add user taxrate using lookup on the table 
     SaveUserData();
 }
 
@@ -1432,7 +1463,7 @@ void PrintDashBoard(int user_index) { // this is foar dashboard for the user
     ClearScreen();
     struct Citizen *citizen = &citizen_list[user_index]; // point the pointer to the struct 
     int child_cat = citizen->deduction[0].category[1]; 
-    double child_deduction_amt = lookupChildAllowance(citizen->numberOfChildren, citizen->childrenUnder18, childTable, 4); 
+    double child_deduction_amt = lookupChildAllowance(citizen->numberOfChildren, citizen->childrenUnder18, childTable, child_table_count); 
 
     printf("-------------------------------------------------------------------------------------------------\n"); // print linde by line to have a buetiful interface 
     printf("========================================= Tax Dashboard =========================================\n");
@@ -1451,14 +1482,14 @@ void PrintDashBoard(int user_index) { // this is foar dashboard for the user
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("Deduction Category Available:\n");
     printf("[1] Marital Status Deduction: %-5s %61.2f\n",citizen->maritalStatus ? "Yes" : "No",citizen->maritalStatus ? deductionTable[0].amount : 0.0);
-    printf("[2] Children Deduction: %-42s %30.2f\n",childTablestring[child_cat],child_deduction_amt);
+    printf("[2] Children Deduction: %-42s %30.2f\n", (child_cat > 0 && child_cat <= child_table_count) ? childTable[child_cat - 1].category : "No Child Allowance (Not Eligible)", child_deduction_amt);
     printf("[3] Special Healthcare Deduction: %-5s %57.2f\n",citizen->specialHealthcare ? "Yes" : "No",citizen->specialHealthcare ? deductionTable[1].amount : 0.0);
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("Total Deduction: %80.2f\n", citizen->totalDeduction);
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("Taxable Income: %81.2f\n", citizen->taxableIncome);
     printf("-------------------------------------------------------------------------------------------------\n");
-    printf("Tax Rate: %86.2f%%\n", lookupTaxRate(citizen->taxableIncome, brackets, 7) * 100);
+    printf("Tax Rate: %86.2f%%\n", lookupTaxRate(citizen->taxableIncome, brackets, bracket_count) * 100);
     printf("-------------------------------------------------------------------------------------------------\n");
     printf("Income Tax: %85.2f\n", citizen->incomeTax);
     printf("-------------------------------------------------------------------------------------------------\n");
@@ -1517,7 +1548,7 @@ void PrintCitizenInfo(int user_index) { //same as the dashbord just use fprintf(
 
     struct Citizen *Citizen = &citizen_list[user_index];
     int child_cat = Citizen->deduction[0].category[1];
-    double child_deduction_amt = lookupChildAllowance(Citizen->numberOfChildren, Citizen->childrenUnder18, childTable, 4);
+    double child_deduction_amt = lookupChildAllowance(Citizen->numberOfChildren, Citizen->childrenUnder18, childTable, child_table_count);
 
     fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
     fprintf(file_path, "========================================= Tax Dashboard =========================================\n");
@@ -1539,8 +1570,8 @@ void PrintCitizenInfo(int user_index) { //same as the dashbord just use fprintf(
             Citizen->maritalStatus ? "Yes" : "No",
             Citizen->maritalStatus ? deductionTable[0].amount : 0.0);
     fprintf(file_path, "[2] Children Deduction: %-42s %30.2f\n",
-            childTablestring[child_cat],
-            child_deduction_amt);
+        (child_cat > 0 && child_cat <= child_table_count) ? childTable[child_cat - 1].category : "No Child Allowance (Not Eligible)",
+        child_deduction_amt);
     fprintf(file_path, "[3] Special Healthcare Deduction: %-5s %57.2f\n",
             Citizen->specialHealthcare ? "Yes" : "No",
             Citizen->specialHealthcare ? deductionTable[1].amount : 0.0);
@@ -1549,7 +1580,7 @@ void PrintCitizenInfo(int user_index) { //same as the dashbord just use fprintf(
     fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
     fprintf(file_path, "Taxable Income: %81.2f\n", Citizen->taxableIncome);
     fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
-    fprintf(file_path, "Tax Rate: %86.2f%%\n", lookupTaxRate(Citizen->taxableIncome, brackets, 7) * 100);
+    fprintf(file_path, "Tax Rate: %86.2f%%\n", lookupTaxRate(Citizen->taxableIncome, brackets, bracket_count) * 100);
     fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
     fprintf(file_path, "Income Tax: %85.2f\n", Citizen->incomeTax);
     fprintf(file_path, "-------------------------------------------------------------------------------------------------\n");
@@ -1699,11 +1730,152 @@ void AdminWatchCitizenPersonalReport() { // function for admin to view individua
     }
 }
 
+void ManageTaxRules() {
+    char rule_menu[4][40] = {
+        "Manage Tax Brackets",
+        "Manage Child Allowances",
+        "Manage Fixed Deductions",
+        "Back to Admin Menu"
+    };
+    char action_menu[4][40] = {
+        "Add New Entry",
+        "Edit Existing Entry",
+        "Delete Entry",
+        "Back"
+    };
+
+    while (1) {
+        int type = SelectOption(rule_menu, 4);
+        if (type == 3) return;
+
+        int action = SelectOption(action_menu, 4);
+        if (action == 3) continue;
+
+        ClearScreen();
+
+        // 1. TAX BRACKETS
+        if (type == 0) {
+            printf("--- Current Tax Brackets (%d) ---\n", bracket_count);
+            for (int i = 0; i < bracket_count; i++) {
+                printf("[%d] %.2f to %.2f | Rate: %.2f%%\n",
+                       i + 1, brackets[i].minIncome, brackets[i].maxIncome, brackets[i].taxRate * 100);
+            }
+            printf("---------------------------------\n");
+
+            if (action == 0) { // Add
+                if (bracket_count >= MAX_BRACKETS) { printf("Max limit reached!\n"); getch(); continue; }
+                brackets[bracket_count].minIncome = CheckValidDouble("Enter Min Income: RM ");
+                brackets[bracket_count].maxIncome = CheckValidDouble("Enter Max Income: RM ");
+                brackets[bracket_count].taxRate = CheckValidDouble("Enter Tax Rate (e.g. 0.05 for 5%): ");
+                bracket_count++;
+                SaveSystemData();
+                printf("[+] Tax bracket added!\n");
+            } else if (action == 1 && bracket_count > 0) { // Edit
+                int idx = (int)CheckValidDouble("Enter Bracket number to edit: ") - 1;
+                if (idx >= 0 && idx < bracket_count) {
+                    brackets[idx].minIncome = CheckValidDouble("New Min Income: RM ");
+                    brackets[idx].maxIncome = CheckValidDouble("New Max Income: RM ");
+                    brackets[idx].taxRate = CheckValidDouble("New Tax Rate (e.g. 0.05 for 5%): ");
+                    SaveSystemData();
+                    printf("[+] Tax bracket updated!\n");
+                } else printf("[!] Invalid index.\n");
+            } else if (action == 2 && bracket_count > 0) { // Delete
+                int idx = (int)CheckValidDouble("Enter Bracket number to delete: ") - 1;
+                if (idx >= 0 && idx < bracket_count && ConfirmAction("Confirm delete?")) {
+                    for (int i = idx; i < bracket_count - 1; i++) brackets[i] = brackets[i + 1];
+                    bracket_count--;
+                    SaveSystemData();
+                    printf("[+] Tax bracket deleted!\n");
+                }
+            }
+        }
+        // 2. CHILD ALLOWANCES
+        else if (type == 1) {
+            printf("--- Current Child Allowances (%d) ---\n", child_table_count);
+            for (int i = 0; i < child_table_count; i++) {
+                printf("[%d] %s | %d-%d children | RM %.2f\n", i + 1, childTable[i].category, childTable[i].minChildren, childTable[i].maxChildren, childTable[i].amount);
+            }
+            printf("-------------------------------------\n");
+
+            if (action == 0) { // Add
+                if (child_table_count >= MAX_CHILD_ALLOWANCE) { printf("Max limit reached!\n"); getch(); continue; }
+                printf("Enter Category Name: ");
+                fgets(childTable[child_table_count].category, 25, stdin);
+                RemoveNewLine(childTable[child_table_count].category);
+                childTable[child_table_count].minChildren = (int)CheckValidDouble("Min Children: ");
+                childTable[child_table_count].maxChildren = (int)CheckValidDouble("Max Children: ");
+                childTable[child_table_count].amount = CheckValidDouble("Allowance Amount: RM ");
+                child_table_count++;
+                SaveSystemData();
+                printf("[+] Child allowance added!\n");
+            } else if (action == 1 && child_table_count > 0) { // Edit
+                int idx = (int)CheckValidDouble("Enter Child Allowance number to edit: ") - 1;
+                if (idx >= 0 && idx < child_table_count) {
+                    printf("Enter New Category Name: ");
+                    fgets(childTable[idx].category, 25, stdin);
+                    RemoveNewLine(childTable[idx].category);
+                    childTable[idx].minChildren = (int)CheckValidDouble("New Min Children: ");
+                    childTable[idx].maxChildren = (int)CheckValidDouble("New Max Children: ");
+                    childTable[idx].amount = CheckValidDouble("New Allowance Amount: RM ");
+                    SaveSystemData();
+                    printf("[+] Child allowance updated!\n");
+                } else printf("[!] Invalid index.\n");
+            } else if (action == 2 && child_table_count > 0) { // Delete
+                int idx = (int)CheckValidDouble("Enter Child Allowance number to delete: ") - 1;
+                if (idx >= 0 && idx < child_table_count && ConfirmAction("Confirm delete?")) {
+                    for (int i = idx; i < child_table_count - 1; i++) childTable[i] = childTable[i + 1];
+                    child_table_count--;
+                    SaveSystemData();
+                    printf("[+] Child allowance deleted!\n");
+                }
+            }
+        }
+        // 3. FIXED DEDUCTIONS
+        else if (type == 2) {
+            printf("--- Current Fixed Deductions (%d) ---\n", deduction_count);
+            for (int i = 0; i < deduction_count; i++) {
+                printf("[%d] %s | RM %.2f\n", i + 1, deductionTable[i].category, deductionTable[i].amount);
+            }
+            printf("-------------------------------------\n");
+
+            if (action == 0) { // Add
+                if (deduction_count >= MAX_DEDUCTIONS) { printf("Max limit reached!\n"); getch(); continue; }
+                printf("Enter Deduction Name: ");
+                fgets(deductionTable[deduction_count].category, 25, stdin);
+                RemoveNewLine(deductionTable[deduction_count].category);
+                deductionTable[deduction_count].amount = CheckValidDouble("Deduction Amount: RM ");
+                deduction_count++;
+                SaveSystemData();
+                printf("[+] Deduction added!\n");
+            } else if (action == 1 && deduction_count > 0) { // Edit
+                int idx = (int)CheckValidDouble("Enter Deduction number to edit: ") - 1;
+                if (idx >= 0 && idx < deduction_count) {
+                    printf("Enter New Deduction Name: ");
+                    fgets(deductionTable[idx].category, 25, stdin);
+                    RemoveNewLine(deductionTable[idx].category);
+                    deductionTable[idx].amount = CheckValidDouble("New Deduction Amount: RM ");
+                    SaveSystemData();
+                    printf("[+] Deduction updated!\n");
+                } else printf("[!] Invalid index.\n");
+            } else if (action == 2 && deduction_count > 0) { // Delete
+                int idx = (int)CheckValidDouble("Enter Deduction number to delete: ") - 1;
+                if (idx >= 0 && idx < deduction_count && ConfirmAction("Confirm delete?")) {
+                    for (int i = idx; i < deduction_count - 1; i++) deductionTable[i] = deductionTable[i + 1];
+                    deduction_count--;
+                    SaveSystemData();
+                    printf("[+] Deduction deleted!\n");
+                }
+            }
+        }
+        printf("Press any key to continue...");
+        getch();
+    }
+}
 
 void AdminMenu(int *running) {
     int admin_logged_in = 1;
     while (admin_logged_in) {
-        int choice = SelectOption(admin_menu, 9);
+        int choice = SelectOption(admin_menu, 10);
         switch (choice) {
         case 0: // View All Citizens (Choose Categories + Print Option)
             ViewAllCitizens();
@@ -1763,14 +1935,17 @@ void AdminMenu(int *running) {
             }
             break;
         }
-        case 7: // Logout
+        case 7: // Manage Tax & Allowance Rules
+            ManageTaxRules();
+            break;
+        case 8: // Logout
             ClearScreen();
             if (ConfirmAction("Logout ?")){ // important desision dulbel confirm 
                 admin_logged_in = 0;
             }
 
             break;
-        case 8: // Exit
+        case 9: // Exit
             ClearScreen();
             if (ConfirmAction("Exit ?")) // important desision dulbel confirm 
             {
@@ -1786,6 +1961,7 @@ void AdminMenu(int *running) {
 
 int main() { // the main 
     LoadUserData();
+    LoadSystemData();
     int running = 1;
 
     while (running) {
@@ -1808,31 +1984,39 @@ int main() { // the main
                         ClearScreen();
                         break;
                     case 1: {
-                        ClearScreen(); // lookkup tax rate 
+                        ClearScreen();
                         temp_value = CheckValidDouble("Please enter the taxable income to lookup the tax bracket: RM ");
-                        double tax_rate = lookupTaxRate(temp_value, brackets, 7);
-                        for (int i = 0; i < 6; i++) {
+                        double tax_rate = lookupTaxRate(temp_value, brackets, bracket_count);
+                        for (int i = 0; i < bracket_count - 1; i++) {
                             printf("Bracket %d: %.2f to %.2f, Tax Rate: %.2f%%\n",
-                                   i + 1, brackets[i].minIncome, brackets[i].maxIncome, brackets[i].taxRate * 100);
+                                 i + 1, brackets[i].minIncome, brackets[i].maxIncome, brackets[i].taxRate * 100);
                         }
-                        printf("Bracket 7: %.2f and above, Tax Rate: %.2f%%\n",
-                               brackets[6].minIncome, brackets[6].taxRate * 100);
+                        if (bracket_count > 0) {
+                            printf("Bracket %d: %.2f and above, Tax Rate: %.2f%%\n",
+                                 bracket_count, brackets[bracket_count - 1].minIncome, brackets[bracket_count - 1].taxRate * 100);
+                        }
                         printf("\n--------------------------------------------------------------------------\n");
                         printf("Your taxable income of %.2f falls into a tax rate of %.2f%%\n", temp_value, tax_rate * 100);
                         printf("Press any key to return...");
                         getch();
                         break;
                     }
-                    case 2: { // lookup child allowance 
+                    case 2: {
                         ClearScreen();
                         temp_value = CheckValidDouble("Please enter the children below 18 count to lookup the child allowance: ");
-                        double child_allowance = lookupChildAllowance((int)temp_value, (int)temp_value, childTable, 4); // lookup finction 
-                        for (int i = 0; i < 3; i++) {
-                            printf("Child Allowance %c: %d to %d children, Amount: %.2f\n",'A' + i, childTable[i].minChildren, childTable[i].maxChildren, childTable[i].amount); // print yjr table out
+                        double child_allowance = lookupChildAllowance((int)temp_value, (int)temp_value, childTable, child_table_count);
+                        for (int i = 0; i < child_table_count - 1; i++) {
+                            printf("%s: %d to %d children, Amount: %.2f\n",
+                                    childTable[i].category, childTable[i].minChildren, childTable[i].maxChildren, childTable[i].amount);
                         }
-                        printf("Child Allowance D: %d or more children, Amount: %.2f\n", childTable[3].minChildren, childTable[3].amount); // last category got no upper limit (same as bracket 7)
+                        if (child_table_count > 0) {
+                            printf("%s: %d or more children, Amount: %.2f\n",
+                                    childTable[child_table_count - 1].category,
+                                    childTable[child_table_count - 1].minChildren,
+                                    childTable[child_table_count - 1].amount);
+                        }
                         printf("\n--------------------------------------------------------------------------\n");
-                        printf("Your children count of %d falls into a child allowance of %.2f\n", (int)temp_value, child_allowance);//Ciallo～ (∠・ω< )⌒★
+                        printf("Your children count of %d falls into a child allowance of %.2f\n", (int)temp_value, child_allowance);
                         printf("Press any key to return...");
                         getch();
                         break;
