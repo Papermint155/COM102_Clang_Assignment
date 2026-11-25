@@ -53,11 +53,12 @@ char dash_menu[7][40] = {
 };
 
 // menu for admin 
-char admin_menu[10][40] = {
+char admin_menu[11][40] = {
     "View All Citizens",
     "Search Citizen Info",
     "Add Citizen",
     "Edit Citizen Info",
+    "Delete Citizen",
     "Watch Citizen Personal Report",
     "Overall Statistics",
     "Print Overall Statistics",
@@ -1937,6 +1938,49 @@ void ManageTaxRules() {
         printf("Press any key to continue...");
         getch();
     }
+}
+
+void AdminDeleteCitizen() {
+    ClearScreen();
+    if (registered_user == 0) {
+        printf("[!] No citizens registered yet.\nPress any key to return...");
+        getch();
+        return;
+    }
+
+    char target_id[30];
+    printf("--- Admin: Delete Citizen --- (press 0 to cancel)\n");
+    printf("Enter Citizen ID to delete: ");
+    fgets(target_id, sizeof(target_id), stdin);
+    if (strcmp(target_id, "0\n") == 0) return;
+    RemoveNewLine(target_id);
+
+    int found_idx = -1;
+    for (int i = 0; i < registered_user; i++) {
+        if (strcmp(citizen_list[i].citizenID, target_id) == 0) {
+            found_idx = i;
+            break;
+        }
+    }
+
+    if (found_idx == -1) {
+        printf("[!] Citizen ID '%s' not found.\nPress any key to return...", target_id);
+        getch();
+        return;
+    }
+
+    printf("\nFound Citizen: %s (ID: %s)\n", citizen_list[found_idx].citizenName, citizen_list[found_idx].citizenID);
+    if (ConfirmAction("Are you sure you want to permanently delete this citizen?")) {
+        for (int i = found_idx; i < registered_user - 1; i++) {
+            citizen_list[i] = citizen_list[i + 1];
+        }
+        memset(&citizen_list[registered_user - 1], 0, sizeof(struct Citizen));
+        registered_user--;
+        SaveUserData();
+        printf("\n[+] Citizen deleted successfully!\n");
+    }
+    printf("Press any key to return...");
+    getch();
 }
 
 void AdminMenu(int *running) {
