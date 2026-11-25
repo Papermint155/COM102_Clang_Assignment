@@ -1986,7 +1986,7 @@ void AdminDeleteCitizen() {
 void AdminMenu(int *running) {
     int admin_logged_in = 1;
     while (admin_logged_in) {
-        int choice = SelectOption(admin_menu, 10);
+        int choice = SelectOption(admin_menu, 11);
         switch (choice) {
         case 0: // View All Citizens (Choose Categories + Print Option)
             ViewAllCitizens();
@@ -2028,13 +2028,15 @@ void AdminMenu(int *running) {
             }
             break;
         }
-        case 4:
+        case 4: AdminDeleteCitizen(); 
+            break;
+        case 5:
             AdminWatchCitizenPersonalReport();
             break;
-        case 5: // Overall Statistics (Choose Summary Categories -> Show -> Ask to Print)
+        case 6: // Overall Statistics (Choose Summary Categories -> Show -> Ask to Print)
             adminSummaryDashboard();
             break;
-        case 6: { // Print Overall Statistics (Choose Summary Categories or Table Categories to Print)
+        case 7: { // Print Overall Statistics (Choose Summary Categories or Table Categories to Print)
             int selected_cats[17];
             int cat_count = 0;
             double threshold = 50000.0;
@@ -2046,17 +2048,17 @@ void AdminMenu(int *running) {
             }
             break;
         }
-        case 7: // Manage Tax & Allowance Rules
+        case 8: // Manage Tax & Allowance Rules
             ManageTaxRules();
             break;
-        case 8: // Logout
+        case 9: // Logout
             ClearScreen();
             if (ConfirmAction("Logout ?")){ // important desision dulbel confirm 
                 admin_logged_in = 0;
             }
 
             break;
-        case 9: // Exit
+        case 10: // Exit
             ClearScreen();
             if (ConfirmAction("Exit ?")) // important desision dulbel confirm 
             {
