@@ -33,7 +33,7 @@ A console-based C application designed to help citizens calculate and track thei
 
 3. Compile the C source file:
    ```bash
-   gcc Assignment_1_4.c -o tax_system.exe -lm
+   gcc Assignment_1.c -o tax_system.exe -lm
    ```
 4. Run the application:
    ```bash
@@ -44,7 +44,7 @@ A console-based C application designed to help citizens calculate and track thei
 
 | File | Description |
 | ----- | ----- |
-| `Assignment_1_4.c` | Main C source code for the application. |
+| `Assignment_1.c` | Main C source code for the application. |
 | `data.txt` | Plain-text configuration storing tax brackets, child allowance tiers, and fixed deductions. |
 | `userdata.bin` | Local binary database storing registered citizen profiles (max 30 citizens). |
 | `create_userdata.py` | Helper script to generate a fresh `data.txt` and a 20-citizen sample `userdata.bin`. |
@@ -197,7 +197,7 @@ The system loads and saves tax brackets, child allowances, and fixed deductions 
 
 ## 9. Troubleshooting & Limitations
 
-* **`[!] Error: data.txt not found!`**: Ensure `data.txt` is placed in the exact same directory as `tax_system.exe`, or run `python create_userdata.py` to regenerate it.
+* **`[!] Error: data.txt not found!`**: Ensure `data.txt` is placed in the exact same directory as `tax_system.exe`, or run `python generate_userdata_bin_and_data_txt.py` to regenerate it.
 * **Corrupted/Weird Citizen Data on Startup:** If you previously ran an older build of the program, delete the old `userdata.bin` and regenerate it using `create_userdata.py`.
 * **Known Limitations:**
   * Supports a maximum of **30 registered citizens**.
